@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Controle de Diárias</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -104,6 +105,23 @@
       transform: scale(0.98);
     }
 
+    .botoes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-secundario {
+      background: #111827;
+      color: white;
+    }
+
+    .btn-pdf {
+      background: #dc2626;
+      color: white;
+    }
+
     .resumo {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -172,6 +190,13 @@
       color: #166534;
     }
 
+    .item-servico {
+      font-size: 15px;
+      font-weight: bold;
+      color: #111827;
+      margin: 6px 0 4px;
+    }
+
     .item-info {
       font-size: 14px;
       color: #374151;
@@ -189,10 +214,12 @@
       display: flex;
       gap: 8px;
       margin-top: 10px;
+      flex-wrap: wrap;
     }
 
     .acoes button {
       flex: 1;
+      min-width: 120px;
       padding: 10px;
       font-size: 14px;
       border-radius: 10px;
@@ -206,6 +233,24 @@
     .btn-excluir {
       background: #dc2626;
       color: white;
+    }
+
+    .filtro-box {
+      display: grid;
+      gap: 12px;
+    }
+
+    .fechamento-box {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    .fechamento-box p {
+      margin: 6px 0;
+      font-size: 14px;
     }
 
     .vazio {
@@ -240,8 +285,18 @@
           </div>
 
           <div>
+            <label>Descrição / Nome do serviço</label>
+            <input type="text" id="descricao" placeholder="Ex: Instalação elétrica" />
+          </div>
+
+          <div>
             <label>Valor da diária (R$)</label>
             <input type="number" id="valor" placeholder="Ex: 150" step="0.01" />
+          </div>
+
+          <div>
+            <label>Adiantamento (R$)</label>
+            <input type="number" id="adiantamento" placeholder="Ex: 50" step="0.01" value="0" />
           </div>
 
           <div>
@@ -265,11 +320,36 @@
       </div>
 
       <div class="card">
-        <h2>Resumo do mês</h2>
+        <h2>Filtro e fechamento</h2>
+        <div class="filtro-box">
+          <div>
+            <label>Mês</label>
+            <input type="month" id="filtroMes" onchange="renderizar()" />
+          </div>
+        </div>
+
+        <div class="fechamento-box" id="fechamentoMes"></div>
+
+        <div class="botoes-grid">
+          <button class="btn-secundario" onclick="limparFiltro()">Ver tudo</button>
+          <button class="btn-pdf" onclick="gerarPDF()">Gerar PDF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Resumo</h2>
         <div class="resumo">
           <div class="caixa-resumo">
-            <span>Total do mês</span>
-            <strong id="totalMes">R$ 0,00</strong>
+            <span>Total bruto</span>
+            <strong id="totalBruto">R$ 0,00</strong>
+          </div>
+          <div class="caixa-resumo">
+            <span>Adiantamentos</span>
+            <strong id="totalAdiantamento">R$ 0,00</strong>
+          </div>
+          <div class="caixa-resumo">
+            <span>Total líquido</span>
+            <strong id="totalLiquido">R$ 0,00</strong>
           </div>
           <div class="caixa-resumo">
             <span>Total pago</span>
@@ -301,7 +381,7 @@
     const STORAGE_KEY = "controle_diarias_mobile";
 
     function formatarMoeda(valor) {
-      return Number(valor).toLocaleString("pt-BR", {
+      return Number(valor || 0).toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL"
       });
@@ -313,6 +393,13 @@
       return `${dia}/${mes}/${ano}`;
     }
 
+    function getMesAtual() {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+      return `${ano}-${mes}`;
+    }
+
     function carregarLancamentos() {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     }
@@ -321,25 +408,41 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
     }
 
+    function limparFiltro() {
+      document.getElementById("filtroMes").value = "";
+      renderizar();
+    }
+
     function adicionarLancamento() {
       const data = document.getElementById("data").value;
+      const descricao = document.getElementById("descricao").value.trim();
       const valor = parseFloat(document.getElementById("valor").value || "0");
+      const adiantamento = parseFloat(document.getElementById("adiantamento").value || "0");
       const tipo = document.getElementById("tipo").value;
       const status = document.getElementById("status").value;
 
-      if (!data || !valor) {
-        alert("Preencha a data e o valor.");
+      if (!data || !descricao || !valor) {
+        alert("Preencha a data, a descrição e o valor.");
         return;
       }
 
-      const valorFinal = tipo === "dobra" ? valor * 2 : valor;
+      const valorBruto = tipo === "dobra" ? valor * 2 : valor;
+      const valorLiquido = valorBruto - adiantamento;
+
+      if (adiantamento > valorBruto) {
+        alert("O adiantamento não pode ser maior que o valor total da diária.");
+        return;
+      }
 
       const lista = carregarLancamentos();
       lista.unshift({
         id: Date.now(),
         data,
+        descricao,
         valorBase: valor,
-        valorFinal,
+        valorBruto,
+        adiantamento,
+        valorLiquido,
         tipo,
         status
       });
@@ -347,7 +450,9 @@
       salvarLancamentos(lista);
 
       document.getElementById("data").value = "";
+      document.getElementById("descricao").value = "";
       document.getElementById("valor").value = "";
+      document.getElementById("adiantamento").value = "0";
       document.getElementById("tipo").value = "normal";
       document.getElementById("status").value = "pendente";
 
@@ -362,21 +467,65 @@
 
     function marcarComoPago(id) {
       const lista = carregarLancamentos().map(item => {
-        if (item.id === id) {
-          item.status = "pago";
-        }
+        if (item.id === id) item.status = "pago";
         return item;
       });
       salvarLancamentos(lista);
       renderizar();
     }
 
-    function renderizar() {
+    function obterListaFiltrada() {
       const lista = carregarLancamentos();
+      const filtroMes = document.getElementById("filtroMes").value;
+
+      if (!filtroMes) return lista;
+      return lista.filter(item => item.data && item.data.startsWith(filtroMes));
+    }
+
+    function atualizarFechamento(lista) {
+      const totalBruto = lista.reduce((soma, item) => soma + Number(item.valorBruto || 0), 0);
+      const totalAdiantamento = lista.reduce((soma, item) => soma + Number(item.adiantamento || 0), 0);
+      const totalLiquido = lista.reduce((soma, item) => soma + Number(item.valorLiquido || 0), 0);
+      const totalPago = lista
+        .filter(item => item.status === "pago")
+        .reduce((soma, item) => soma + Number(item.valorLiquido || 0), 0);
+      const totalPendente = lista
+        .filter(item => item.status === "pendente")
+        .reduce((soma, item) => soma + Number(item.valorLiquido || 0), 0);
+
+      document.getElementById("totalBruto").textContent = formatarMoeda(totalBruto);
+      document.getElementById("totalAdiantamento").textContent = formatarMoeda(totalAdiantamento);
+      document.getElementById("totalLiquido").textContent = formatarMoeda(totalLiquido);
+      document.getElementById("totalPago").textContent = formatarMoeda(totalPago);
+      document.getElementById("totalPendente").textContent = formatarMoeda(totalPendente);
+      document.getElementById("quantidade").textContent = lista.length;
+
+      const filtroMes = document.getElementById("filtroMes").value;
+      const box = document.getElementById("fechamentoMes");
+
+      if (filtroMes) {
+        box.innerHTML = `
+          <p><strong>Fechamento do mês:</strong> ${filtroMes}</p>
+          <p>Total bruto: <strong>${formatarMoeda(totalBruto)}</strong></p>
+          <p>Adiantamentos: <strong>${formatarMoeda(totalAdiantamento)}</strong></p>
+          <p>Total líquido a receber: <strong>${formatarMoeda(totalLiquido)}</strong></p>
+          <p>Pago: <strong>${formatarMoeda(totalPago)}</strong></p>
+          <p>Pendente: <strong>${formatarMoeda(totalPendente)}</strong></p>
+        `;
+      } else {
+        box.innerHTML = `
+          <p><strong>Fechamento geral</strong></p>
+          <p>Selecione um mês para ver o fechamento mensal.</p>
+        `;
+      }
+    }
+
+    function renderizar() {
+      const lista = obterListaFiltrada();
       const container = document.getElementById("lista");
 
       if (lista.length === 0) {
-        container.innerHTML = '<div class="vazio">Nenhum lançamento ainda.</div>';
+        container.innerHTML = '<div class="vazio">Nenhum lançamento encontrado.</div>';
       } else {
         container.innerHTML = lista.map(item => `
           <div class="item">
@@ -387,9 +536,12 @@
               </div>
             </div>
 
+            <div class="item-servico">${item.descricao || "-"}</div>
             <div class="item-info">Tipo: ${item.tipo === "dobra" ? "Dobra" : "Normal"}</div>
             <div class="item-info">Valor base: ${formatarMoeda(item.valorBase)}</div>
-            <div class="item-valor">${formatarMoeda(item.valorFinal)}</div>
+            <div class="item-info">Valor bruto: ${formatarMoeda(item.valorBruto)}</div>
+            <div class="item-info">Adiantamento: ${formatarMoeda(item.adiantamento)}</div>
+            <div class="item-valor">Líquido: ${formatarMoeda(item.valorLiquido)}</div>
 
             <div class="acoes">
               ${item.status !== "pago"
@@ -402,20 +554,60 @@
         `).join("");
       }
 
-      const totalMes = lista.reduce((soma, item) => soma + Number(item.valorFinal), 0);
-      const totalPago = lista
-        .filter(item => item.status === "pago")
-        .reduce((soma, item) => soma + Number(item.valorFinal), 0);
-      const totalPendente = lista
-        .filter(item => item.status === "pendente")
-        .reduce((soma, item) => soma + Number(item.valorFinal), 0);
-
-      document.getElementById("totalMes").textContent = formatarMoeda(totalMes);
-      document.getElementById("totalPago").textContent = formatarMoeda(totalPago);
-      document.getElementById("totalPendente").textContent = formatarMoeda(totalPendente);
-      document.getElementById("quantidade").textContent = lista.length;
+      atualizarFechamento(lista);
     }
 
+    async function gerarPDF() {
+      const lista = obterListaFiltrada();
+      if (lista.length === 0) {
+        alert("Não há lançamentos para gerar PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const filtroMes = document.getElementById("filtroMes").value || "geral";
+
+      let y = 15;
+      doc.setFontSize(16);
+      doc.text("Controle de Diárias", 14, y);
+      y += 10;
+
+      doc.setFontSize(11);
+      doc.text(`Fechamento: ${filtroMes}`, 14, y);
+      y += 10;
+
+      lista.forEach((item, index) => {
+        if (y > 260) {
+          doc.addPage();
+          y = 15;
+        }
+
+        doc.text(`${index + 1}. ${formatarData(item.data)} - ${item.descricao}`, 14, y);
+        y += 6;
+        doc.text(`Tipo: ${item.tipo} | Bruto: ${formatarMoeda(item.valorBruto)} | Adiant.: ${formatarMoeda(item.adiantamento)} | Líquido: ${formatarMoeda(item.valorLiquido)} | Status: ${item.status}`, 14, y);
+        y += 10;
+      });
+
+      const totalBruto = lista.reduce((soma, item) => soma + Number(item.valorBruto || 0), 0);
+      const totalAdiantamento = lista.reduce((soma, item) => soma + Number(item.adiantamento || 0), 0);
+      const totalLiquido = lista.reduce((soma, item) => soma + Number(item.valorLiquido || 0), 0);
+
+      if (y > 240) {
+        doc.addPage();
+        y = 15;
+      }
+
+      doc.text(`Total bruto: ${formatarMoeda(totalBruto)}`, 14, y);
+      y += 8;
+      doc.text(`Adiantamentos: ${formatarMoeda(totalAdiantamento)}`, 14, y);
+      y += 8;
+      doc.text(`Total líquido: ${formatarMoeda(totalLiquido)}`, 14, y);
+
+      doc.save(`fechamento-${filtroMes}.pdf`);
+    }
+
+    document.getElementById("filtroMes").value = getMesAtual();
     renderizar();
   </script>
 </body>
