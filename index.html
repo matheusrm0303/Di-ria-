@@ -16,8 +16,8 @@ body {
 }
 
 .topo {
-  background:linear-gradient(135deg,#020617,#1d4ed8);
-  padding:20px;
+  background:#1d4ed8;
+  padding:15px;
 }
 
 .tabs {
@@ -27,7 +27,7 @@ body {
 .tab {
   flex:1;
   text-align:center;
-  padding:14px;
+  padding:12px;
   cursor:pointer;
   color:#94a3b8;
 }
@@ -37,14 +37,14 @@ body {
   border-bottom:3px solid #3b82f6;
 }
 
-.section {display:none;padding:16px}
+.section {display:none;padding:15px}
 .section.active {display:block}
 
 .card {
   background:#111827;
-  padding:14px;
-  border-radius:12px;
-  margin-bottom:12px;
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:10px;
 }
 
 input,select {
@@ -72,14 +72,13 @@ button {
   border-radius:8px;
   margin-bottom:8px;
 }
-
 </style>
 </head>
 
 <body>
 
 <div class="topo">
-  <h2>💼 Controle de Diárias</h2>
+  <h3>💼 Controle de Diárias</h3>
 </div>
 
 <div class="tabs">
@@ -92,8 +91,6 @@ button {
 <div id="diaria" class="section active">
 
 <div class="card">
-<h3>Nova diária</h3>
-
 <input type="date" id="dataDiaria">
 <input type="text" id="descDiaria" placeholder="Serviço">
 
@@ -123,8 +120,6 @@ button {
 <div id="adiantamento" class="section">
 
 <div class="card">
-<h3>Adiantamento</h3>
-
 <input type="date" id="dataAd">
 <input type="text" id="descAd">
 <input type="number" id="valorAd">
@@ -140,15 +135,12 @@ button {
 <div id="resumo" class="section">
 
 <div class="card">
-<h3>Resumo por mês</h3>
-
 <input type="month" id="mes">
 <button onclick="gerarPDF()">Gerar PDF</button>
 
 <p>Total diárias: <strong id="tDiaria">0</strong></p>
 <p>Adiantamentos: <strong id="tAd">0</strong></p>
 <p>Líquido: <strong id="tLiquido">0</strong></p>
-
 </div>
 
 <div id="listaResumo"></div>
@@ -180,6 +172,9 @@ function addDiaria(){
 
   let data = document.getElementById("dataDiaria").value
   let desc = document.getElementById("descDiaria").value
+  let tipo = document.getElementById("tipoDiaria").value
+  let calc = document.getElementById("tipoCalc").value
+  let status = document.getElementById("status").value
 
   if(!data || !desc){
     alert("Preencha tudo")
@@ -190,8 +185,8 @@ function addDiaria(){
     tipo:"diaria",
     data:data,
     desc:desc,
-    valor:calcValor(tipoDiaria.value,tipoCalc.value),
-    status:status.value
+    valor:calcValor(tipo,calc),
+    status:status
   })
 
   salvar()
@@ -228,22 +223,22 @@ function excluir(index){
 
 function render(){
 
+  let listaDiaria = document.getElementById("listaDiaria")
+  let listaAd = document.getElementById("listaAd")
+
   let d = dados.filter(i=>i.tipo=="diaria")
   let a = dados.filter(i=>i.tipo=="adiantamento")
 
   listaDiaria.innerHTML = d.map((i,index)=>`
     <div class="item">
-      <strong>${i.desc}</strong><br>
-      ${i.data}<br>
-      R$ ${i.valor}
+      ${i.data} - ${i.desc} - R$ ${i.valor}
       <button onclick="excluir(${index})">Excluir</button>
     </div>
   `).join("")
 
   listaAd.innerHTML = a.map((i,index)=>`
     <div class="item">
-      💸 ${i.desc}<br>
-      R$ ${i.valor}
+      ${i.data} - ${i.desc} - R$ ${i.valor}
       <button onclick="excluir(${index})">Excluir</button>
     </div>
   `).join("")
@@ -253,11 +248,12 @@ function render(){
 
 function atualizarResumo(){
 
-  let mesSel = document.getElementById("mes").value
+  let mes = document.getElementById("mes").value
+  let listaResumo = document.getElementById("listaResumo")
 
   let lista = dados.filter(i=>{
-    if(!mesSel) return true
-    return i.data.startsWith(mesSel)
+    if(!mes) return true
+    return i.data.startsWith(mes)
   })
 
   let d = lista.filter(i=>i.tipo=="diaria")
@@ -266,9 +262,9 @@ function atualizarResumo(){
   let td = d.reduce((s,i)=>s+i.valor,0)
   let ta = a.reduce((s,i)=>s+i.valor,0)
 
-  tDiaria.innerText = td
-  tAd.innerText = ta
-  tLiquido.innerText = td-ta
+  document.getElementById("tDiaria").innerText = td
+  document.getElementById("tAd").innerText = ta
+  document.getElementById("tLiquido").innerText = td-ta
 
   listaResumo.innerHTML = lista.map(i=>`
     <div class="item">
@@ -282,16 +278,16 @@ function gerarPDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  let mesSel = document.getElementById("mes").value || "geral"
+  let mes = document.getElementById("mes").value
 
   let lista = dados.filter(i=>{
-    if(!mesSel) return true
-    return i.data.startsWith(mesSel)
+    if(!mes) return true
+    return i.data.startsWith(mes)
   })
 
-  let y=10
+  let y = 10
 
-  doc.text("Resumo de Diárias",10,y)
+  doc.text("Resumo",10,y)
   y+=10
 
   lista.forEach(i=>{
