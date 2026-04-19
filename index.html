@@ -1,475 +1,3 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="theme-color" content="#020617" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Diárias" />
-  <title>Controle de Diárias</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      font-family: Arial, sans-serif;
-    }
-
-    :root {
-      --bg: #020617;
-      --bg-soft: #0f172a;
-      --card: #111827;
-      --card-2: #1e293b;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --line: #334155;
-      --blue: #2563eb;
-      --blue-2: #1d4ed8;
-      --green: #16a34a;
-      --green-soft: #dcfce7;
-      --yellow: #f59e0b;
-      --yellow-soft: #fef3c7;
-      --red: #dc2626;
-      --purple-soft: #ede9fe;
-      --purple-text: #6d28d9;
-      --shadow: 0 10px 25px rgba(0,0,0,0.28);
-    }
-
-    body {
-      margin: 0;
-      background: linear-gradient(180deg, #020617 0%, #0b1220 100%);
-      color: var(--text);
-    }
-
-    .app {
-      max-width: 480px;
-      margin: 0 auto;
-      min-height: 100vh;
-      padding-bottom: 80px;
-    }
-
-    .topo {
-      background: linear-gradient(135deg, #020617, #1d4ed8);
-      padding: 26px 18px 20px;
-      border-bottom-left-radius: 24px;
-      border-bottom-right-radius: 24px;
-      box-shadow: var(--shadow);
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-
-    .topo h1 {
-      margin: 0;
-      font-size: 25px;
-      font-weight: 800;
-    }
-
-    .topo p {
-      margin: 8px 0 0;
-      color: #dbeafe;
-      font-size: 14px;
-    }
-
-    .tabs-wrap {
-      padding: 12px 16px 0;
-      position: sticky;
-      top: 88px;
-      z-index: 19;
-      background: linear-gradient(to bottom, rgba(2,6,23,0.96), rgba(2,6,23,0.86));
-      backdrop-filter: blur(6px);
-    }
-
-    .tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 18px;
-      padding: 6px;
-      box-shadow: var(--shadow);
-    }
-
-    .tab-btn {
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      padding: 12px 8px;
-      border-radius: 14px;
-      cursor: pointer;
-      transition: 0.2s ease;
-    }
-
-    .tab-btn.active {
-      background: linear-gradient(135deg, var(--blue), var(--blue-2));
-      color: white;
-      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
-    }
-
-    .conteudo {
-      padding: 16px;
-    }
-
-    .section {
-      display: none;
-      animation: fadeUp 0.25s ease;
-    }
-
-    .section.active {
-      display: block;
-    }
-
-    @keyframes fadeUp {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid #1f2937;
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-      margin-bottom: 14px;
-    }
-
-    .card h2 {
-      margin: 0 0 8px;
-      font-size: 18px;
-    }
-
-    .subtitulo {
-      font-size: 13px;
-      color: var(--muted);
-      margin: 0 0 14px;
-      line-height: 1.4;
-    }
-
-    .grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      color: #cbd5e1;
-    }
-
-    input,
-    select {
-      width: 100%;
-      padding: 14px 13px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: var(--card-2);
-      color: white;
-      font-size: 16px;
-      outline: none;
-    }
-
-    input:focus,
-    select:focus {
-      border-color: #60a5fa;
-      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.14);
-    }
-
-    button {
-      border: none;
-      border-radius: 14px;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: 0.18s ease;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    .btn-principal {
-      width: 100%;
-      background: linear-gradient(135deg, var(--blue), var(--blue-2));
-      color: white;
-      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
-    }
-
-    .btn-secundario {
-      background: #334155;
-      color: white;
-    }
-
-    .btn-pagar {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: white;
-      flex: 1;
-      min-width: 120px;
-    }
-
-    .btn-excluir {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      flex: 1;
-      min-width: 120px;
-    }
-
-    .valor-preview {
-      background: linear-gradient(135deg, #172554, #1d4ed8);
-      border: 1px solid #3b82f6;
-      border-radius: 18px;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .valor-preview span {
-      display: block;
-      font-size: 12px;
-      color: #dbeafe;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-    }
-
-    .valor-preview strong {
-      font-size: 28px;
-      color: white;
-    }
-
-    .resumo {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    .caixa-resumo {
-      background: var(--card-2);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 15px;
-      text-align: center;
-    }
-
-    .caixa-resumo span {
-      display: block;
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 7px;
-    }
-
-    .caixa-resumo strong {
-      font-size: 20px;
-      color: white;
-    }
-
-    .caixa-resumo.azul {
-      background: #172554;
-      border-color: #1d4ed8;
-    }
-
-    .caixa-resumo.verde {
-      background: #052e16;
-      border-color: #16a34a;
-    }
-
-    .caixa-resumo.amarelo {
-      background: #451a03;
-      border-color: #f59e0b;
-    }
-
-    .lista {
-      display: grid;
-      gap: 12px;
-    }
-
-    .item {
-      background: #1e293b;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px;
-    }
-
-    .item-topo {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      align-items: flex-start;
-      margin-bottom: 8px;
-    }
-
-    .item-data {
-      font-weight: 700;
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .item-servico {
-      font-size: 16px;
-      font-weight: 800;
-      margin: 6px 0;
-      color: white;
-    }
-
-    .item-info {
-      font-size: 14px;
-      color: #cbd5e1;
-      margin: 4px 0;
-      line-height: 1.4;
-    }
-
-    .item-valor {
-      margin-top: 10px;
-      font-size: 20px;
-      font-weight: 800;
-      color: white;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 7px 11px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .pendente {
-      background: var(--yellow-soft);
-      color: #92400e;
-    }
-
-    .pago {
-      background: var(--green-soft);
-      color: #166534;
-    }
-
-    .adiantamento-badge {
-      background: var(--purple-soft);
-      color: var(--purple-text);
-    }
-
-    .acoes {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .vazio {
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
-      padding: 18px 8px;
-      background: #0f172a;
-      border: 1px dashed #334155;
-      border-radius: 16px;
-    }
-
-    .rodape {
-      text-align: center;
-      font-size: 12px;
-      color: var(--muted);
-      padding: 10px 16px 24px;
-    }
-
-    @media (max-width: 420px) {
-      .grid-2,
-      .resumo {
-        grid-template-columns: 1fr;
-      }
-
-      .topo h1 {
-        font-size: 23px;
-      }
-
-      .tabs-wrap {
-        top: 84px;
-      }
-
-      .tab-btn {
-        font-size: 12px;
-        padding: 11px 6px;
-      }
-
-      .valor-preview strong {
-        font-size: 24px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <div class="topo">
-      <h1>💼 Controle de Diárias</h1>
-      <p>Rua R$ 200 • Depósito R$ 100</p>
-    </div>
-
-    <div class="tabs-wrap">
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="tab-diarias">💰 Diárias</button>
-        <button class="tab-btn" data-tab="tab-adiantamentos">💸 Adiant.</button>
-        <button class="tab-btn" data-tab="tab-resumo">📊 Resumo</button>
-      </div>
-    </div>
-
-    <div class="conteudo">
-      <div id="tab-diarias" class="section active">
-        <div class="card">
-          <h2>➕ Lançar diária</h2>
-          <div class="subtitulo">
-            Escolha o tipo de diária e o valor será calculado automaticamente.
-          </div>
-
-          <div class="grid">
-            <div>
-              <label>Data</label>
-              <input type="date" id="dataDiaria" />
-            </div>
-
-            <div>
-              <label>Descrição / Nome do serviço</label>
-              <input type="text" id="descricaoDiaria" placeholder="Ex: Instalação elétrica" />
-            </div>
-
-            <div class="grid-2">
-              <div>
-                <label>Tipo de diária</label>
-                <select id="tipoDiaria">
-                  <option value="rua">Diária de rua</option>
-                  <option value="deposito">Diária depósito</option>
-                </select>
-              </div>
-
-              <div>
-                <label>Tipo</label>
-                <select id="multiplicadorDiaria">
-                  <option value="normal">Normal</option>
-                  <option value="dobra">Dobra</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label>Status</label>
-              <select id="statusDiaria">
                 <option value="pendente">Pendente</option>
                 <option value="pago">Pago</option>
               </select>
@@ -525,7 +53,23 @@
 
       <div id="tab-resumo" class="section">
         <div class="card">
-          <h2>📊 Resumo geral</h2>
+          <h2>📅 Resumo por mês</h2>
+
+          <div class="grid">
+            <div>
+              <label>Mês</label>
+              <input type="month" id="filtroMes" />
+            </div>
+          </div>
+
+          <div class="botoes-grid">
+            <button class="btn-secundario" id="btnMesAtual">Mês atual</button>
+            <button class="btn-pdf" id="btnGerarPDF">Gerar PDF</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>📊 Resumo</h2>
           <div class="resumo">
             <div class="caixa-resumo azul">
               <span>Total diárias</span>
@@ -560,7 +104,7 @@
         </div>
 
         <div class="card">
-          <h2>🗂️ Todos os lançamentos</h2>
+          <h2>🗂️ Lançamentos do mês</h2>
           <div id="listaGeral" class="lista"></div>
         </div>
       </div>
@@ -572,7 +116,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "controle_diarias_estavel_v4";
+    const STORAGE_KEY = "controle_diarias_estavel_v6";
 
     function $(id) {
       return document.getElementById(id);
@@ -592,6 +136,10 @@
       valorAdiantamento: $("valorAdiantamento"),
       btnAdicionarAdiantamento: $("btnAdicionarAdiantamento"),
 
+      filtroMes: $("filtroMes"),
+      btnMesAtual: $("btnMesAtual"),
+      btnGerarPDF: $("btnGerarPDF"),
+
       listaDiarias: $("listaDiarias"),
       listaAdiantamentos: $("listaAdiantamentos"),
       listaGeral: $("listaGeral"),
@@ -603,6 +151,13 @@
       totalPendente: $("totalPendente"),
       quantidadeTotal: $("quantidadeTotal")
     };
+
+    function getMesAtual() {
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+      return `${ano}-${mes}`;
+    }
 
     function carregarDados() {
       try {
@@ -726,6 +281,14 @@
       renderizar();
     }
 
+    function obterListaFiltrada() {
+      const lista = carregarDados();
+      const mes = els.filtroMes.value;
+
+      if (!mes) return lista;
+      return lista.filter(item => item.data && item.data.startsWith(mes));
+    }
+
     function renderListaDiarias(lista) {
       const diarias = lista.filter(item => item.categoria === "diaria");
 
@@ -750,7 +313,10 @@
           <div class="item-valor">Valor final: ${formatarMoeda(item.valor)}</div>
 
           <div class="acoes">
-            ${item.status !== "pago" ? `<button class="btn-pagar" onclick="marcarComoPago(${item.id})">Marcar como pago</button>` : ""}
+            ${item.status !== "pago"
+              ? `<button class="btn-pagar" onclick="marcarComoPago(${item.id})">Marcar como pago</button>`
+              : ""
+            }
             <button class="btn-excluir" onclick="excluirLancamento(${item.id})">Excluir</button>
           </div>
         </div>
@@ -784,7 +350,7 @@
 
     function renderListaGeral(lista) {
       if (!lista.length) {
-        els.listaGeral.innerHTML = '<div class="vazio">Nenhum lançamento encontrado.</div>';
+        els.listaGeral.innerHTML = '<div class="vazio">Nenhum lançamento neste mês.</div>';
         return;
       }
 
@@ -825,8 +391,12 @@
       const totalDiarias = diarias.reduce((s, item) => s + Number(item.valor || 0), 0);
       const totalAdiantamentos = adiantamentos.reduce((s, item) => s + Number(item.valor || 0), 0);
       const totalLiquido = totalDiarias - totalAdiantamentos;
-      const totalPago = diarias.filter(item => item.status === "pago").reduce((s, item) => s + Number(item.valor || 0), 0);
-      const totalPendente = diarias.filter(item => item.status === "pendente").reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalPago = diarias
+        .filter(item => item.status === "pago")
+        .reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalPendente = diarias
+        .filter(item => item.status === "pendente")
+        .reduce((s, item) => s + Number(item.valor || 0), 0);
 
       els.totalDiarias.textContent = formatarMoeda(totalDiarias);
       els.totalAdiantamentos.textContent = formatarMoeda(totalAdiantamentos);
@@ -836,12 +406,91 @@
       els.quantidadeTotal.textContent = String(lista.length);
     }
 
+    function gerarPDF() {
+      const lista = obterListaFiltrada();
+
+      if (!lista.length) {
+        alert("Não há lançamentos neste mês para gerar PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const mes = els.filtroMes.value || "geral";
+
+      const diarias = lista.filter(item => item.categoria === "diaria");
+      const adiantamentos = lista.filter(item => item.categoria === "adiantamento");
+
+      const totalDiarias = diarias.reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalAdiantamentos = adiantamentos.reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalLiquido = totalDiarias - totalAdiantamentos;
+      const totalPago = diarias
+        .filter(item => item.status === "pago")
+        .reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalPendente = diarias
+        .filter(item => item.status === "pendente")
+        .reduce((s, item) => s + Number(item.valor || 0), 0);
+
+      let y = 15;
+
+      doc.setFontSize(16);
+      doc.text("Resumo de Diárias", 14, y);
+      y += 10;
+
+      doc.setFontSize(11);
+      doc.text(`Mês: ${mes}`, 14, y);
+      y += 10;
+
+      doc.text(`Total de diárias: ${formatarMoeda(totalDiarias)}`, 14, y);
+      y += 7;
+      doc.text(`Total de adiantamentos: ${formatarMoeda(totalAdiantamentos)}`, 14, y);
+      y += 7;
+      doc.text(`Líquido a receber: ${formatarMoeda(totalLiquido)}`, 14, y);
+      y += 7;
+      doc.text(`Total pago: ${formatarMoeda(totalPago)}`, 14, y);
+      y += 7;
+      doc.text(`Total pendente: ${formatarMoeda(totalPendente)}`, 14, y);
+      y += 12;
+
+      doc.setFontSize(13);
+      doc.text("Lançamentos do Mês", 14, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      lista.forEach((item, index) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 15;
+        }
+
+        if (item.categoria === "diaria") {
+          doc.text(
+            `${index + 1}. ${formatarData(item.data)} | ${item.descricao} | ${item.tipoDiaria === "rua" ? "Rua" : "Depósito"} | ${item.multiplicador === "dobra" ? "Dobra" : "Normal"} | ${formatarMoeda(item.valor)} | ${item.status}`,
+            14,
+            y
+          );
+        } else {
+          doc.text(
+            `${index + 1}. ${formatarData(item.data)} | Adiantamento | ${item.descricao} | ${formatarMoeda(item.valor)}`,
+            14,
+            y
+          );
+        }
+
+        y += 7;
+      });
+
+      doc.save(`resumo-diarias-${mes}.pdf`);
+    }
+
     function renderizar() {
-      const lista = carregarDados();
-      renderListaDiarias(lista);
-      renderListaAdiantamentos(lista);
-      renderListaGeral(lista);
-      atualizarResumo(lista);
+      const listaCompleta = carregarDados();
+      const listaFiltrada = obterListaFiltrada();
+
+      renderListaDiarias(listaCompleta);
+      renderListaAdiantamentos(listaCompleta);
+      renderListaGeral(listaFiltrada);
+      atualizarResumo(listaFiltrada);
     }
 
     function configurarAbas() {
@@ -868,7 +517,14 @@
     els.multiplicadorDiaria.addEventListener("change", atualizarPreviewDiaria);
     els.btnAdicionarDiaria.addEventListener("click", adicionarDiaria);
     els.btnAdicionarAdiantamento.addEventListener("click", adicionarAdiantamento);
+    els.filtroMes.addEventListener("change", renderizar);
+    els.btnMesAtual.addEventListener("click", function () {
+      els.filtroMes.value = getMesAtual();
+      renderizar();
+    });
+    els.btnGerarPDF.addEventListener("click", gerarPDF);
 
+    els.filtroMes.value = getMesAtual();
     atualizarPreviewDiaria();
     configurarAbas();
     renderizar();
