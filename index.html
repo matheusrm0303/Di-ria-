@@ -3,40 +3,45 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Diárias</title>
+<title>Controle Profissional</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <style>
 body{margin:0;background:#020617;color:#fff;font-family:Arial}
-.app{max-width:480px;margin:auto;padding-bottom:80px}
-.topo{background:#1d4ed8;padding:20px;border-radius:0 0 20px 20px}
-.tabs{display:flex;background:#0f172a}
-.tab{flex:1;padding:12px;text-align:center;color:#94a3b8;cursor:pointer}
-.tab.active{color:#fff;border-bottom:3px solid #3b82f6}
-.section{display:none;padding:15px}
-.section.active{display:block}
-.card{background:#111827;padding:15px;border-radius:15px;margin-bottom:10px}
+.app{max-width:500px;margin:auto;padding:15px}
+.topo{font-size:22px;font-weight:bold;margin-bottom:15px}
+
+.tabs{display:flex;margin-bottom:10px}
+.tab{flex:1;padding:10px;text-align:center;background:#111827;margin:2px;border-radius:8px;color:#94a3b8}
+.tab.active{background:#2563eb;color:#fff}
+
+.card{background:#111827;padding:12px;border-radius:12px;margin-bottom:10px}
+
 input,select{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:none;background:#1e293b;color:#fff}
-button{width:100%;padding:10px;border:none;border-radius:8px;background:#2563eb;color:#fff;margin-top:5px}
+
+button{padding:10px;border:none;border-radius:8px;margin-top:5px}
+.btn{background:#2563eb;color:#fff;width:100%}
+.btn2{background:#16a34a;color:#fff}
+.btn3{background:#dc2626;color:#fff}
+
 .item{background:#1e293b;padding:10px;border-radius:10px;margin-bottom:8px}
+
 </style>
 </head>
 
 <body>
 <div class="app">
 
-<div class="topo">
-<h2>💼 Controle de Diárias</h2>
-</div>
+<div class="topo">💼 Controle Profissional</div>
 
 <div class="tabs">
-<div class="tab active" onclick="trocarTab('d',this)">💰</div>
-<div class="tab" onclick="trocarTab('a',this)">💸</div>
-<div class="tab" onclick="trocarTab('r',this)">📊</div>
+<div class="tab active" onclick="tab('d',this)">Diárias</div>
+<div class="tab" onclick="tab('a',this)">Adiant.</div>
+<div class="tab" onclick="tab('r',this)">Resumo</div>
 </div>
 
-<div id="d" class="section active">
+<div id="d">
 <div class="card">
 <input type="date" id="data">
 <input type="text" id="desc" placeholder="Serviço">
@@ -52,28 +57,30 @@ button{width:100%;padding:10px;border:none;border-radius:8px;background:#2563eb;
 <option value="pendente">Pendente</option>
 <option value="pago">Pago</option>
 </select>
-<button onclick="add()">Adicionar</button>
+
+<button class="btn" onclick="add()">Adicionar</button>
 </div>
 
 <div id="lista"></div>
 </div>
 
-<div id="a" class="section">
+<div id="a" style="display:none">
 <div class="card">
 <input type="date" id="dataA">
 <input type="text" id="descA">
 <input type="number" id="valA">
-<button onclick="addA()">Adicionar</button>
+
+<button class="btn" onclick="addA()">Adicionar</button>
 </div>
 
 <div id="listaA"></div>
 </div>
 
-<div id="r" class="section">
+<div id="r" style="display:none">
 <div class="card">
 <input type="month" id="mes">
-<button onclick="mesAtual()">Mês atual</button>
-<button onclick="pdf()">Gerar PDF</button>
+<button class="btn2" onclick="mesAtual()">Mês atual</button>
+<button class="btn" onclick="pdf()">Gerar PDF</button>
 
 <p>Total: <span id="t"></span></p>
 <p>Adiant.: <span id="ta"></span></p>
@@ -84,100 +91,3 @@ button{width:100%;padding:10px;border:none;border-radius:8px;background:#2563eb;
 </div>
 
 </div>
-
-<script>
-let db = JSON.parse(localStorage.getItem("db"))||[]
-
-function salvar(){localStorage.setItem("db",JSON.stringify(db))}
-
-function trocarTab(id,el){
-document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"))
-document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"))
-document.getElementById(id).classList.add("active")
-el.classList.add("active")
-}
-
-function valor(){
-let v = tipo.value=="rua"?200:100
-return calc.value=="d"?v*2:v
-}
-
-function add(){
-if(!data.value||!desc.value)return alert("preencha")
-db.unshift({id:Date.now(),tipo:"d",data:data.value,desc:desc.value,valor:valor(),status:status.value})
-salvar();render()
-}
-
-function addA(){
-if(!dataA.value||!descA.value||!valA.value)return alert("preencha")
-db.unshift({id:Date.now(),tipo:"a",data:dataA.value,desc:descA.value,valor:+valA.value})
-salvar();render()
-}
-
-function del(id){db=db.filter(i=>i.id!=id);salvar();render()}
-
-function mesAtual(){
-let d=new Date()
-mes.value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")
-render()
-}
-
-function filtro(){
-if(!mes.value)return db
-return db.filter(i=>i.data.startsWith(mes.value))
-}
-
-function render(){
-let d=db.filter(i=>i.tipo=="d")
-let a=db.filter(i=>i.tipo=="a")
-
-lista.innerHTML=d.map(i=>`
-<div class="item">
-${i.data} - ${i.desc} - R$ ${i.valor}
-<button onclick="del(${i.id})">Excluir</button>
-</div>`).join("")
-
-listaA.innerHTML=a.map(i=>`
-<div class="item">
-${i.data} - ${i.desc} - R$ ${i.valor}
-<button onclick="del(${i.id})">Excluir</button>
-</div>`).join("")
-
-let f=filtro()
-
-let td=f.filter(i=>i.tipo=="d").reduce((s,i)=>s+i.valor,0)
-let ta=f.filter(i=>i.tipo=="a").reduce((s,i)=>s+i.valor,0)
-
-t.innerText=td
-ta.innerText=ta
-tl.innerText=td-ta
-
-listaR.innerHTML=f.map(i=>`
-<div class="item">
-${i.data} - ${i.desc} - R$ ${i.valor}
-</div>`).join("")
-}
-
-function pdf(){
-const { jsPDF } = window.jspdf;
-let doc=new jsPDF()
-let f=filtro()
-let y=10
-
-doc.text("Relatório Diárias",10,y);y+=10
-
-f.forEach(i=>{
-doc.text(`${i.data} - ${i.desc} - R$ ${i.valor}`,10,y)
-y+=8
-})
-
-doc.save("relatorio.pdf")
-}
-
-mes.addEventListener("change",render)
-
-render()
-</script>
-
-</body>
-</html>
