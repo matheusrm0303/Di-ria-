@@ -1,287 +1,217 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Diárias Pro</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    
-    <style>
-        :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --primary: #3b82f6;
-            --success: #22c55e;
-            --danger: #ef4444;
-            --text: #f8fafc;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle Profissional</title>
 
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .container { max-width: 500px; margin: auto; padding: 20px; }
-        
-        .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        
-        .card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
-        h2, h3 { margin-top: 0; color: var(--text); }
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-        input, select { 
-            width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; 
-            border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box;
-        }
+<style>
+body{margin:0;background:#020617;color:#fff;font-family:Arial}
+.app{max-width:500px;margin:auto;padding:15px}
+.topo{display:flex;justify-content:space-between;align-items:center}
+button{padding:10px;border:none;border-radius:10px;cursor:pointer}
+input,select{width:100%;padding:10px;margin-top:5px;border-radius:10px;border:1px solid #333;background:#111;color:#fff}
+.card{background:#111;padding:15px;border-radius:15px;margin-bottom:10px}
+.lista{display:grid;gap:10px}
+.item{background:#1e293b;padding:10px;border-radius:10px}
+</style>
 
-        button { 
-            width: 100%; padding: 12px; border: none; border-radius: 8px; 
-            cursor: pointer; font-weight: bold; transition: 0.3s; margin-top: 10px;
-        }
-
-        .btn-add { background: var(--primary); color: white; }
-        .btn-add:hover { background: #2563eb; }
-        
-        .btn-out { background: transparent; color: #94a3b8; border: 1px solid #334155; width: auto; padding: 5px 15px; }
-
-        .item { 
-            background: #334155; padding: 15px; border-radius: 12px; margin-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center;
-            border-left: 5px solid var(--primary);
-        }
-
-        .item.adiantamento { border-left-color: var(--danger); }
-        
-        .total-box { font-size: 1.2rem; text-align: center; border: 2px solid var(--primary); }
-
-        #login { text-align: center; margin-top: 50px; }
-        .loading { text-align: center; color: var(--primary); }
-    </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="login-screen">
-        <div class="card">
-            <h2>💼 Login</h2>
-            <input type="email" id="email" placeholder="Seu email">
-            <input type="password" id="senha" placeholder="Sua senha">
-            <button class="btn-add" onclick="login()">Entrar</button>
-            <button style="background:none; color:#94a3b8" onclick="criarConta()">Criar nova conta</button>
-            <p id="msg" style="color:var(--danger); font-size: 14px;"></p>
-        </div>
-    </div>
+<div id="login">
+<h2>Login</h2>
+<input id="email" placeholder="Email">
+<input id="senha" type="password" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+<button onclick="criar()">Criar conta</button>
+<p id="msg"></p>
+</div>
 
-    <div id="app-screen" style="display:none">
-        <div class="topo">
-            <h2>Controle</h2>
-            <button class="btn-out" onclick="logout()">Sair</button>
-        </div>
+<div class="app" id="app" style="display:none">
 
-        <div class="card">
-            <h3>Nova Diária</h3>
-            <input type="date" id="data">
-            <input type="text" id="desc" placeholder="Nome do Evento / Local">
-            <select id="tipo">
-                <option value="200">Rua (R$ 200)</option>
-                <option value="100">Depósito (R$ 100)</option>
-            </select>
-            <select id="mult">
-                <option value="1">Normal (1x)</option>
-                <option value="2">Dobra (2x)</option>
-            </select>
-            <button class="btn-add" onclick="addDiaria()">Adicionar Diária</button>
-        </div>
+<div class="topo">
+<h2>💼 Controle</h2>
+<button onclick="logout()">Sair</button>
+</div>
 
-        <div class="card" style="border-top: 4px solid var(--danger);">
-            <h3>Adiantamento</h3>
-            <input type="date" id="dataAd">
-            <input type="text" id="descAd" placeholder="Motivo do adiantamento">
-            <input type="number" id="valorAd" placeholder="Valor R$">
-            <button class="btn-add" style="background:var(--danger)" onclick="addAdiantamento()">Lançar Saída</button>
-        </div>
+<div class="card">
+<h3>Nova diária</h3>
+<input type="date" id="data">
+<input placeholder="Descrição" id="desc">
 
-        <div id="total-geral" class="card total-box">
-            Carregando saldo...
-        </div>
+<select id="tipo">
+<option value="rua">Rua 200</option>
+<option value="deposito">Depósito 100</option>
+</select>
 
-        <h3>Histórico</h3>
-        <div id="lista-atividades"></div>
+<select id="mult">
+<option value="1">Normal</option>
+<option value="2">Dobra</option>
+</select>
 
-        <button class="btn-out" style="width:100%; margin-top:20px" onclick="gerarPDF()">📄 Baixar Relatório PDF</button>
-    </div>
+<button onclick="addDiaria()">Adicionar</button>
+</div>
+
+<div class="card">
+<h3>Adiantamento</h3>
+<input type="date" id="dataAd">
+<input placeholder="Descrição" id="descAd">
+<input type="number" id="valorAd">
+<button onclick="addAd()">Adicionar</button>
+</div>
+
+<div class="card">
+<h3>Lista</h3>
+<div id="lista" class="lista"></div>
+</div>
+
+<div class="card">
+<button onclick="gerarPDF()">Gerar PDF</button>
+</div>
+
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Configuração do seu Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
-        authDomain: "controle-diarias-4627b.firebaseapp.com",
-        projectId: "controle-diarias-4627b",
-        storageBucket: "controle-diarias-4627b.firebasestorage.app",
-        messagingSenderId: "432274053982",
-        appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
-    };
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import {
+getAuth,
+createUserWithEmailAndPassword,
+signInWithEmailAndPassword,
+onAuthStateChanged,
+signOut
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getFirestore();
+import {
+getFirestore,
+collection,
+addDoc,
+getDocs,
+doc,
+deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-    let usuarioAtual = null;
-    let listaLocal = [];
+const firebaseConfig = {
+apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
+authDomain: "controle-diarias-4627b.firebaseapp.com",
+projectId: "controle-diarias-4627b",
+storageBucket: "controle-diarias-4627b.firebasestorage.app",
+messagingSenderId: "432274053982",
+appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
+};
 
-    // Gerenciamento de Telas
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            usuarioAtual = user;
-            document.getElementById("login-screen").style.display = "none";
-            document.getElementById("app-screen").style.display = "block";
-            carregarDados();
-        } else {
-            document.getElementById("login-screen").style.display = "block";
-            document.getElementById("app-screen").style.display = "none";
-        }
-    });
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
 
-    // Funções de Autenticação
-    window.login = async () => {
-        const e = document.getElementById("email").value;
-        const s = document.getElementById("senha").value;
-        try { await signInWithEmailAndPassword(auth, e, s); } 
-        catch (err) { document.getElementById("msg").innerText = "Email ou senha incorretos."; }
-    };
+let user;
+let listaLocal=[];
 
-    window.criarConta = async () => {
-        const e = document.getElementById("email").value;
-        const s = document.getElementById("senha").value;
-        try { await createUserWithEmailAndPassword(auth, e, s); } 
-        catch (err) { document.getElementById("msg").innerText = "Erro ao criar: " + err.message; }
-    };
+onAuthStateChanged(auth, async (u)=>{
+if(u){
+user=u;
+document.getElementById("login").style.display="none";
+document.getElementById("app").style.display="block";
+carregar();
+}else{
+document.getElementById("login").style.display="block";
+document.getElementById("app").style.display="none";
+}
+});
 
-    window.logout = () => signOut(auth);
+window.login=async ()=>{
+try{
+await signInWithEmailAndPassword(auth,email.value,senha.value);
+}catch(e){
+msg.innerText=e.message;
+}
+}
 
-    // Banco de Dados
-    const getUserRef = () => collection(db, "usuarios", usuarioAtual.uid, "lancamentos");
+window.criar=async ()=>{
+try{
+await createUserWithEmailAndPassword(auth,email.value,senha.value);
+}catch(e){
+msg.innerText=e.message;
+}
+}
 
-    window.addDiaria = async () => {
-        const data = document.getElementById("data").value;
-        const desc = document.getElementById("desc").value;
-        const base = document.getElementById("tipo").value;
-        const mult = document.getElementById("mult").value;
+window.logout=()=>signOut(auth);
 
-        if(!data || !desc) return alert("Preencha os campos!");
+function ref(){
+return collection(db,"users",user.uid,"dados");
+}
 
-        const valorTotal = Number(base) * Number(mult);
+async function addDiaria(){
+const base = tipo.value==="rua"?200:100;
+const valor = base*Number(mult.value);
 
-        await addDoc(getUserRef(), {
-            tipo: "entrada",
-            data,
-            desc,
-            valor: valorTotal,
-            criadoEm: new Date().getTime()
-        });
-        
-        limparCampos();
-        carregarDados();
-    };
+await addDoc(ref(),{
+tipo:"diaria",
+data:data.value,
+desc:desc.value,
+valor
+});
 
-    window.addAdiantamento = async () => {
-        const data = document.getElementById("dataAd").value;
-        const desc = document.getElementById("descAd").value;
-        const valor = document.getElementById("valorAd").value;
+carregar();
+}
 
-        if(!data || !valor) return alert("Preencha os campos!");
+async function addAd(){
+await addDoc(ref(),{
+tipo:"adiantamento",
+data:dataAd.value,
+desc:descAd.value,
+valor:Number(valorAd.value)
+});
+carregar();
+}
 
-        await addDoc(getUserRef(), {
-            tipo: "saida",
-            data,
-            desc: desc || "Adiantamento",
-            valor: Number(valor) * -1,
-            criadoEm: new Date().getTime()
-        });
+async function del(id){
+await deleteDoc(doc(db,"users",user.uid,"dados",id));
+carregar();
+}
 
-        limparCampos();
-        carregarDados();
-    };
+async function carregar(){
+const q=await getDocs(ref());
+listaLocal=[];
+q.forEach(doc=>{
+listaLocal.push({id:doc.id,...doc.data()});
+});
+render();
+}
 
-    async function carregarDados() {
-        const q = query(getUserRef(), orderBy("data", "desc"));
-        const snapshot = await getDocs(q);
-        listaLocal = [];
-        snapshot.forEach(d => listaLocal.push({ id: d.id, ...d.data() }));
-        renderizar();
-    }
+function render(){
+lista.innerHTML = listaLocal.map(i=>`
+<div class="item">
+<b>${i.desc}</b><br>
+${i.data}<br>
+R$ ${i.valor}
+<br>
+<button onclick="del('${i.id}')">Excluir</button>
+</div>
+`).join("");
+}
 
-    function renderizar() {
-        const listaDiv = document.getElementById("lista-atividades");
-        const totalDiv = document.getElementById("total-geral");
-        let saldo = 0;
+window.del=del;
 
-        if (listaLocal.length === 0) {
-            listaDiv.innerHTML = "<p style='text-align:center; color:#64748b'>Nenhum registro encontrado.</p>";
-            totalDiv.innerHTML = "Saldo: R$ 0,00";
-            return;
-        }
+function gerarPDF(){
+const { jsPDF } = window.jspdf;
+const doc=new jsPDF();
 
-        listaDiv.innerHTML = listaLocal.map(item => {
-            saldo += item.valor;
-            const isSaida = item.tipo === "saida";
-            return `
-                <div class="item ${isSaida ? 'adiantamento' : ''}">
-                    <div>
-                        <small>${formatarData(item.data)}</small><br>
-                        <strong>${item.desc}</strong>
-                    </div>
-                    <div style="text-align: right">
-                        <span style="color: ${isSaida ? 'var(--danger)' : 'var(--success)'}">
-                            R$ ${Math.abs(item.valor).toFixed(2)}
-                        </span><br>
-                        <button onclick="excluir('${item.id}')" style="background:none; color:#64748b; font-size:12px; padding:0; margin:0">Remover</button>
-                    </div>
-                </div>
-            `;
-        }).join("");
+let y=10;
+doc.text("Relatório",10,y);
+y+=10;
 
-        totalDiv.innerHTML = `Saldo Atual: <span style="color:${saldo >= 0 ? 'var(--success)' : 'var(--danger)'}">R$ ${saldo.toFixed(2)}</span>`;
-    }
+listaLocal.forEach(i=>{
+doc.text(`${i.data} - ${i.desc} - R$ ${i.valor}`,10,y);
+y+=8;
+});
 
-    window.excluir = async (id) => {
-        if(confirm("Deseja apagar este registro?")) {
-            await deleteDoc(doc(db, "usuarios", usuarioAtual.uid, "lancamentos", id));
-            carregarDados();
-        }
-    };
+doc.save("relatorio.pdf");
+}
 
-    function limparCampos() {
-        document.getElementById("desc").value = "";
-        document.getElementById("valorAd").value = "";
-        document.getElementById("descAd").value = "";
-    }
-
-    function formatarData(dataStr) {
-        const [ano, mes, dia] = dataStr.split("-");
-        return `${dia}/${mes}/${ano}`;
-    }
-
-    window.gerarPDF = () => {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF();
-        let y = 20;
-
-        pdf.setFontSize(18);
-        pdf.text("Relatório de Diárias e Adiantamentos", 15, y);
-        y += 15;
-
-        pdf.setFontSize(12);
-        listaLocal.forEach(i => {
-            const txt = `${formatarData(i.data)} - ${i.desc}: R$ ${i.valor.toFixed(2)}`;
-            pdf.text(txt, 15, y);
-            y += 8;
-            if(y > 280) { pdf.addPage(); y = 20; }
-        });
-
-        pdf.save("meu-controle.pdf");
-    };
 </script>
 
 </body>
