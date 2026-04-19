@@ -1,308 +1,877 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle de Diárias</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Diárias" />
+  <title>Controle de Diárias</title>
 
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      font-family: Arial, sans-serif;
+    }
 
-<style>
-body {
-  margin:0;
-  font-family:Arial;
-  background:#020617;
-  color:white;
-}
+    :root {
+      --bg: #020617;
+      --bg-soft: #0f172a;
+      --card: #111827;
+      --card-2: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --line: #334155;
+      --blue: #2563eb;
+      --blue-2: #1d4ed8;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --yellow: #f59e0b;
+      --yellow-soft: #fef3c7;
+      --red: #dc2626;
+      --purple-soft: #ede9fe;
+      --purple-text: #6d28d9;
+      --shadow: 0 10px 25px rgba(0,0,0,0.28);
+    }
 
-.topo {
-  background:#1d4ed8;
-  padding:15px;
-}
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #020617 0%, #0b1220 100%);
+      color: var(--text);
+    }
 
-.tabs {
-  display:flex;
-}
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
 
-.tab {
-  flex:1;
-  text-align:center;
-  padding:12px;
-  cursor:pointer;
-  color:#94a3b8;
-}
+    .topo {
+      background: linear-gradient(135deg, #020617, #1d4ed8);
+      padding: 26px 18px 20px;
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
 
-.tab.active {
-  color:white;
-  border-bottom:3px solid #3b82f6;
-}
+    .topo h1 {
+      margin: 0;
+      font-size: 25px;
+      font-weight: 800;
+    }
 
-.section {display:none;padding:15px}
-.section.active {display:block}
+    .topo p {
+      margin: 8px 0 0;
+      color: #dbeafe;
+      font-size: 14px;
+    }
 
-.card {
-  background:#111827;
-  padding:12px;
-  border-radius:10px;
-  margin-bottom:10px;
-}
+    .tabs-wrap {
+      padding: 12px 16px 0;
+      position: sticky;
+      top: 88px;
+      z-index: 19;
+      background: linear-gradient(to bottom, rgba(2,6,23,0.96), rgba(2,6,23,0.86));
+      backdrop-filter: blur(6px);
+    }
 
-input,select {
-  width:100%;
-  padding:10px;
-  margin-bottom:8px;
-  border-radius:8px;
-  border:none;
-  background:#1e293b;
-  color:white;
-}
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      padding: 6px;
+      box-shadow: var(--shadow);
+    }
 
-button {
-  width:100%;
-  padding:10px;
-  border:none;
-  border-radius:8px;
-  background:#2563eb;
-  color:white;
-}
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 12px 8px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
 
-.item {
-  background:#1e293b;
-  padding:10px;
-  border-radius:8px;
-  margin-bottom:8px;
-}
-</style>
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      color: white;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+    }
+
+    .conteudo {
+      padding: 16px;
+    }
+
+    .section {
+      display: none;
+      animation: fadeUp 0.25s ease;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #1f2937;
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .subtitulo {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0 0 14px;
+      line-height: 1.4;
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 14px 13px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--card-2);
+      color: white;
+      font-size: 16px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.14);
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .btn-principal {
+      width: 100%;
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      color: white;
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
+    }
+
+    .btn-secundario {
+      background: #334155;
+      color: white;
+    }
+
+    .btn-pagar {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .btn-excluir {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .valor-preview {
+      background: linear-gradient(135deg, #172554, #1d4ed8);
+      border: 1px solid #3b82f6;
+      border-radius: 18px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .valor-preview span {
+      display: block;
+      font-size: 12px;
+      color: #dbeafe;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .valor-preview strong {
+      font-size: 28px;
+      color: white;
+    }
+
+    .resumo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .caixa-resumo {
+      background: var(--card-2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .caixa-resumo span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .caixa-resumo strong {
+      font-size: 20px;
+      color: white;
+    }
+
+    .caixa-resumo.azul {
+      background: #172554;
+      border-color: #1d4ed8;
+    }
+
+    .caixa-resumo.verde {
+      background: #052e16;
+      border-color: #16a34a;
+    }
+
+    .caixa-resumo.amarelo {
+      background: #451a03;
+      border-color: #f59e0b;
+    }
+
+    .lista {
+      display: grid;
+      gap: 12px;
+    }
+
+    .item {
+      background: #1e293b;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .item-topo {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .item-data {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .item-servico {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 6px 0;
+      color: white;
+    }
+
+    .item-info {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin: 4px 0;
+      line-height: 1.4;
+    }
+
+    .item-valor {
+      margin-top: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 7px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pendente {
+      background: var(--yellow-soft);
+      color: #92400e;
+    }
+
+    .pago {
+      background: var(--green-soft);
+      color: #166534;
+    }
+
+    .adiantamento-badge {
+      background: var(--purple-soft);
+      color: var(--purple-text);
+    }
+
+    .acoes {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .vazio {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      padding: 18px 8px;
+      background: #0f172a;
+      border: 1px dashed #334155;
+      border-radius: 16px;
+    }
+
+    .rodape {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 10px 16px 24px;
+    }
+
+    @media (max-width: 420px) {
+      .grid-2,
+      .resumo {
+        grid-template-columns: 1fr;
+      }
+
+      .topo h1 {
+        font-size: 23px;
+      }
+
+      .tabs-wrap {
+        top: 84px;
+      }
+
+      .tab-btn {
+        font-size: 12px;
+        padding: 11px 6px;
+      }
+
+      .valor-preview strong {
+        font-size: 24px;
+      }
+    }
+  </style>
 </head>
-
 <body>
-
-<div class="topo">
-  <h3>💼 Controle de Diárias</h3>
-</div>
-
-<div class="tabs">
-  <div class="tab active" onclick="trocarTab('diaria',this)">💰</div>
-  <div class="tab" onclick="trocarTab('adiantamento',this)">💸</div>
-  <div class="tab" onclick="trocarTab('resumo',this)">📊</div>
-</div>
-
-<!-- DIARIA -->
-<div id="diaria" class="section active">
-
-<div class="card">
-<input type="date" id="dataDiaria">
-<input type="text" id="descDiaria" placeholder="Serviço">
-
-<select id="tipoDiaria">
-<option value="rua">Rua (200)</option>
-<option value="deposito">Depósito (100)</option>
-</select>
-
-<select id="tipoCalc">
-<option value="normal">Normal</option>
-<option value="dobra">Dobra</option>
-</select>
-
-<select id="status">
-<option value="pendente">Pendente</option>
-<option value="pago">Pago</option>
-</select>
-
-<button onclick="addDiaria()">Adicionar</button>
-</div>
-
-<div id="listaDiaria"></div>
-
-</div>
-
-<!-- ADIANTAMENTO -->
-<div id="adiantamento" class="section">
-
-<div class="card">
-<input type="date" id="dataAd">
-<input type="text" id="descAd">
-<input type="number" id="valorAd">
-
-<button onclick="addAdiantamento()">Adicionar</button>
-</div>
-
-<div id="listaAd"></div>
-
-</div>
-
-<!-- RESUMO -->
-<div id="resumo" class="section">
-
-<div class="card">
-<input type="month" id="mes">
-<button onclick="gerarPDF()">Gerar PDF</button>
-
-<p>Total diárias: <strong id="tDiaria">0</strong></p>
-<p>Adiantamentos: <strong id="tAd">0</strong></p>
-<p>Líquido: <strong id="tLiquido">0</strong></p>
-</div>
-
-<div id="listaResumo"></div>
-
-</div>
-
-<script>
-
-let dados = JSON.parse(localStorage.getItem("app")) || []
-
-function salvar(){
-  localStorage.setItem("app",JSON.stringify(dados))
-}
-
-function trocarTab(id,el){
-  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"))
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"))
-
-  document.getElementById(id).classList.add("active")
-  el.classList.add("active")
-}
-
-function calcValor(tipo,calc){
-  let base = tipo=="rua"?200:100
-  return calc=="dobra"?base*2:base
-}
-
-function addDiaria(){
-
-  let data = document.getElementById("dataDiaria").value
-  let desc = document.getElementById("descDiaria").value
-  let tipo = document.getElementById("tipoDiaria").value
-  let calc = document.getElementById("tipoCalc").value
-  let status = document.getElementById("status").value
-
-  if(!data || !desc){
-    alert("Preencha tudo")
-    return
-  }
-
-  dados.unshift({
-    tipo:"diaria",
-    data:data,
-    desc:desc,
-    valor:calcValor(tipo,calc),
-    status:status
-  })
-
-  salvar()
-  render()
-}
-
-function addAdiantamento(){
-
-  let data = document.getElementById("dataAd").value
-  let desc = document.getElementById("descAd").value
-  let valor = document.getElementById("valorAd").value
-
-  if(!data || !desc || !valor){
-    alert("Preencha tudo")
-    return
-  }
-
-  dados.unshift({
-    tipo:"adiantamento",
-    data:data,
-    desc:desc,
-    valor:Number(valor)
-  })
-
-  salvar()
-  render()
-}
-
-function excluir(index){
-  dados.splice(index,1)
-  salvar()
-  render()
-}
-
-function render(){
-
-  let listaDiaria = document.getElementById("listaDiaria")
-  let listaAd = document.getElementById("listaAd")
-
-  let d = dados.filter(i=>i.tipo=="diaria")
-  let a = dados.filter(i=>i.tipo=="adiantamento")
-
-  listaDiaria.innerHTML = d.map((i,index)=>`
-    <div class="item">
-      ${i.data} - ${i.desc} - R$ ${i.valor}
-      <button onclick="excluir(${index})">Excluir</button>
+  <div class="app">
+    <div class="topo">
+      <h1>💼 Controle de Diárias</h1>
+      <p>Rua R$ 200 • Depósito R$ 100</p>
     </div>
-  `).join("")
 
-  listaAd.innerHTML = a.map((i,index)=>`
-    <div class="item">
-      ${i.data} - ${i.desc} - R$ ${i.valor}
-      <button onclick="excluir(${index})">Excluir</button>
+    <div class="tabs-wrap">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-diarias">💰 Diárias</button>
+        <button class="tab-btn" data-tab="tab-adiantamentos">💸 Adiant.</button>
+        <button class="tab-btn" data-tab="tab-resumo">📊 Resumo</button>
+      </div>
     </div>
-  `).join("")
 
-  atualizarResumo()
-}
+    <div class="conteudo">
+      <div id="tab-diarias" class="section active">
+        <div class="card">
+          <h2>➕ Lançar diária</h2>
+          <div class="subtitulo">
+            Escolha o tipo de diária e o valor será calculado automaticamente.
+          </div>
 
-function atualizarResumo(){
+          <div class="grid">
+            <div>
+              <label>Data</label>
+              <input type="date" id="dataDiaria" />
+            </div>
 
-  let mes = document.getElementById("mes").value
-  let listaResumo = document.getElementById("listaResumo")
+            <div>
+              <label>Descrição / Nome do serviço</label>
+              <input type="text" id="descricaoDiaria" placeholder="Ex: Instalação elétrica" />
+            </div>
 
-  let lista = dados.filter(i=>{
-    if(!mes) return true
-    return i.data.startsWith(mes)
-  })
+            <div class="grid-2">
+              <div>
+                <label>Tipo de diária</label>
+                <select id="tipoDiaria">
+                  <option value="rua">Diária de rua</option>
+                  <option value="deposito">Diária depósito</option>
+                </select>
+              </div>
 
-  let d = lista.filter(i=>i.tipo=="diaria")
-  let a = lista.filter(i=>i.tipo=="adiantamento")
+              <div>
+                <label>Tipo</label>
+                <select id="multiplicadorDiaria">
+                  <option value="normal">Normal</option>
+                  <option value="dobra">Dobra</option>
+                </select>
+              </div>
+            </div>
 
-  let td = d.reduce((s,i)=>s+i.valor,0)
-  let ta = a.reduce((s,i)=>s+i.valor,0)
+            <div>
+              <label>Status</label>
+              <select id="statusDiaria">
+                <option value="pendente">Pendente</option>
+                <option value="pago">Pago</option>
+              </select>
+            </div>
 
-  document.getElementById("tDiaria").innerText = td
-  document.getElementById("tAd").innerText = ta
-  document.getElementById("tLiquido").innerText = td-ta
+            <div class="valor-preview">
+              <span>Valor calculado</span>
+              <strong id="valorPreviewDiaria">R$ 200,00</strong>
+            </div>
+          </div>
 
-  listaResumo.innerHTML = lista.map(i=>`
-    <div class="item">
-      ${i.data} - ${i.desc} - R$ ${i.valor}
+          <button class="btn-principal" id="btnAdicionarDiaria">Adicionar diária</button>
+        </div>
+
+        <div class="card">
+          <h2>📋 Lista de diárias</h2>
+          <div id="listaDiarias" class="lista"></div>
+        </div>
+      </div>
+
+      <div id="tab-adiantamentos" class="section">
+        <div class="card">
+          <h2>💸 Lançar adiantamento</h2>
+          <div class="subtitulo">
+            Área separada para registrar qualquer valor adiantado.
+          </div>
+
+          <div class="grid">
+            <div>
+              <label>Data</label>
+              <input type="date" id="dataAdiantamento" />
+            </div>
+
+            <div>
+              <label>Descrição</label>
+              <input type="text" id="descricaoAdiantamento" placeholder="Ex: Vale da semana" />
+            </div>
+
+            <div>
+              <label>Valor do adiantamento (R$)</label>
+              <input type="number" id="valorAdiantamento" placeholder="Ex: 50" step="0.01" />
+            </div>
+          </div>
+
+          <button class="btn-principal" id="btnAdicionarAdiantamento">Adicionar adiantamento</button>
+        </div>
+
+        <div class="card">
+          <h2>🧾 Lista de adiantamentos</h2>
+          <div id="listaAdiantamentos" class="lista"></div>
+        </div>
+      </div>
+
+      <div id="tab-resumo" class="section">
+        <div class="card">
+          <h2>📊 Resumo geral</h2>
+          <div class="resumo">
+            <div class="caixa-resumo azul">
+              <span>Total diárias</span>
+              <strong id="totalDiarias">R$ 0,00</strong>
+            </div>
+
+            <div class="caixa-resumo amarelo">
+              <span>Adiantamentos</span>
+              <strong id="totalAdiantamentos">R$ 0,00</strong>
+            </div>
+
+            <div class="caixa-resumo verde">
+              <span>Líquido a receber</span>
+              <strong id="totalLiquido">R$ 0,00</strong>
+            </div>
+
+            <div class="caixa-resumo">
+              <span>Total pago</span>
+              <strong id="totalPago">R$ 0,00</strong>
+            </div>
+
+            <div class="caixa-resumo">
+              <span>Total pendente</span>
+              <strong id="totalPendente">R$ 0,00</strong>
+            </div>
+
+            <div class="caixa-resumo">
+              <span>Quantidade</span>
+              <strong id="quantidadeTotal">0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🗂️ Todos os lançamentos</h2>
+          <div id="listaGeral" class="lista"></div>
+        </div>
+      </div>
     </div>
-  `).join("")
-}
 
-function gerarPDF(){
+    <div class="rodape">
+      Aplicativo de controle de diárias e adiantamentos
+    </div>
+  </div>
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  <script>
+    const STORAGE_KEY = "controle_diarias_estavel_v4";
 
-  let mes = document.getElementById("mes").value
+    function $(id) {
+      return document.getElementById(id);
+    }
 
-  let lista = dados.filter(i=>{
-    if(!mes) return true
-    return i.data.startsWith(mes)
-  })
+    const els = {
+      tipoDiaria: $("tipoDiaria"),
+      multiplicadorDiaria: $("multiplicadorDiaria"),
+      valorPreviewDiaria: $("valorPreviewDiaria"),
+      dataDiaria: $("dataDiaria"),
+      descricaoDiaria: $("descricaoDiaria"),
+      statusDiaria: $("statusDiaria"),
+      btnAdicionarDiaria: $("btnAdicionarDiaria"),
 
-  let y = 10
+      dataAdiantamento: $("dataAdiantamento"),
+      descricaoAdiantamento: $("descricaoAdiantamento"),
+      valorAdiantamento: $("valorAdiantamento"),
+      btnAdicionarAdiantamento: $("btnAdicionarAdiantamento"),
 
-  doc.text("Resumo",10,y)
-  y+=10
+      listaDiarias: $("listaDiarias"),
+      listaAdiantamentos: $("listaAdiantamentos"),
+      listaGeral: $("listaGeral"),
 
-  lista.forEach(i=>{
-    doc.text(`${i.data} - ${i.desc} - R$ ${i.valor}`,10,y)
-    y+=8
-  })
+      totalDiarias: $("totalDiarias"),
+      totalAdiantamentos: $("totalAdiantamentos"),
+      totalLiquido: $("totalLiquido"),
+      totalPago: $("totalPago"),
+      totalPendente: $("totalPendente"),
+      quantidadeTotal: $("quantidadeTotal")
+    };
 
-  doc.save("resumo.pdf")
-}
+    function carregarDados() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      } catch (e) {
+        return [];
+      }
+    }
 
-document.getElementById("mes").addEventListener("change",atualizarResumo)
+    function salvarDados(lista) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+    }
 
-render()
+    function formatarMoeda(valor) {
+      return Number(valor || 0).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      });
+    }
 
-</script>
+    function formatarData(data) {
+      if (!data) return "-";
+      const partes = data.split("-");
+      if (partes.length !== 3) return data;
+      return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
 
+    function calcularValorDiaria() {
+      const valorBase = els.tipoDiaria.value === "rua" ? 200 : 100;
+      const valorFinal = els.multiplicadorDiaria.value === "dobra" ? valorBase * 2 : valorBase;
+      return { valorBase, valorFinal };
+    }
+
+    function atualizarPreviewDiaria() {
+      const calc = calcularValorDiaria();
+      els.valorPreviewDiaria.textContent = formatarMoeda(calc.valorFinal);
+    }
+
+    function adicionarDiaria() {
+      const data = els.dataDiaria.value;
+      const descricao = els.descricaoDiaria.value.trim();
+      const status = els.statusDiaria.value;
+      const tipoDiaria = els.tipoDiaria.value;
+      const multiplicador = els.multiplicadorDiaria.value;
+
+      if (!data || !descricao) {
+        alert("Preencha a data e a descrição da diária.");
+        return;
+      }
+
+      const calc = calcularValorDiaria();
+      const lista = carregarDados();
+
+      lista.unshift({
+        id: Date.now(),
+        categoria: "diaria",
+        data,
+        descricao,
+        status,
+        tipoDiaria,
+        multiplicador,
+        valorBase: calc.valorBase,
+        valor: calc.valorFinal
+      });
+
+      salvarDados(lista);
+
+      els.dataDiaria.value = "";
+      els.descricaoDiaria.value = "";
+      els.tipoDiaria.value = "rua";
+      els.multiplicadorDiaria.value = "normal";
+      els.statusDiaria.value = "pendente";
+
+      atualizarPreviewDiaria();
+      renderizar();
+    }
+
+    function adicionarAdiantamento() {
+      const data = els.dataAdiantamento.value;
+      const descricao = els.descricaoAdiantamento.value.trim();
+      const valor = parseFloat(els.valorAdiantamento.value || "0");
+
+      if (!data || !descricao || !valor) {
+        alert("Preencha a data, a descrição e o valor do adiantamento.");
+        return;
+      }
+
+      const lista = carregarDados();
+
+      lista.unshift({
+        id: Date.now(),
+        categoria: "adiantamento",
+        data,
+        descricao,
+        valor
+      });
+
+      salvarDados(lista);
+
+      els.dataAdiantamento.value = "";
+      els.descricaoAdiantamento.value = "";
+      els.valorAdiantamento.value = "";
+
+      renderizar();
+    }
+
+    function excluirLancamento(id) {
+      const lista = carregarDados().filter(item => item.id !== id);
+      salvarDados(lista);
+      renderizar();
+    }
+
+    function marcarComoPago(id) {
+      const lista = carregarDados().map(item => {
+        if (item.id === id && item.categoria === "diaria") {
+          item.status = "pago";
+        }
+        return item;
+      });
+      salvarDados(lista);
+      renderizar();
+    }
+
+    function renderListaDiarias(lista) {
+      const diarias = lista.filter(item => item.categoria === "diaria");
+
+      if (!diarias.length) {
+        els.listaDiarias.innerHTML = '<div class="vazio">Nenhuma diária lançada.</div>';
+        return;
+      }
+
+      els.listaDiarias.innerHTML = diarias.map(item => `
+        <div class="item">
+          <div class="item-topo">
+            <div class="item-data">${formatarData(item.data)}</div>
+            <div class="badge ${item.status === "pago" ? "pago" : "pendente"}">
+              ${item.status === "pago" ? "Pago" : "Pendente"}
+            </div>
+          </div>
+
+          <div class="item-servico">${item.descricao}</div>
+          <div class="item-info">Tipo de diária: ${item.tipoDiaria === "rua" ? "Diária de rua" : "Diária depósito"}</div>
+          <div class="item-info">Modalidade: ${item.multiplicador === "dobra" ? "Dobra" : "Normal"}</div>
+          <div class="item-info">Valor base: ${formatarMoeda(item.valorBase)}</div>
+          <div class="item-valor">Valor final: ${formatarMoeda(item.valor)}</div>
+
+          <div class="acoes">
+            ${item.status !== "pago" ? `<button class="btn-pagar" onclick="marcarComoPago(${item.id})">Marcar como pago</button>` : ""}
+            <button class="btn-excluir" onclick="excluirLancamento(${item.id})">Excluir</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderListaAdiantamentos(lista) {
+      const adiantamentos = lista.filter(item => item.categoria === "adiantamento");
+
+      if (!adiantamentos.length) {
+        els.listaAdiantamentos.innerHTML = '<div class="vazio">Nenhum adiantamento lançado.</div>';
+        return;
+      }
+
+      els.listaAdiantamentos.innerHTML = adiantamentos.map(item => `
+        <div class="item">
+          <div class="item-topo">
+            <div class="item-data">${formatarData(item.data)}</div>
+            <div class="badge adiantamento-badge">Adiantamento</div>
+          </div>
+
+          <div class="item-servico">${item.descricao}</div>
+          <div class="item-valor">Valor: ${formatarMoeda(item.valor)}</div>
+
+          <div class="acoes">
+            <button class="btn-excluir" onclick="excluirLancamento(${item.id})">Excluir</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderListaGeral(lista) {
+      if (!lista.length) {
+        els.listaGeral.innerHTML = '<div class="vazio">Nenhum lançamento encontrado.</div>';
+        return;
+      }
+
+      els.listaGeral.innerHTML = lista.map(item => {
+        if (item.categoria === "diaria") {
+          return `
+            <div class="item">
+              <div class="item-topo">
+                <div class="item-data">${formatarData(item.data)}</div>
+                <div class="badge ${item.status === "pago" ? "pago" : "pendente"}">
+                  ${item.status === "pago" ? "Pago" : "Pendente"}
+                </div>
+              </div>
+              <div class="item-servico">💰 ${item.descricao}</div>
+              <div class="item-info">${item.tipoDiaria === "rua" ? "Diária de rua" : "Diária depósito"} • ${item.multiplicador === "dobra" ? "Dobra" : "Normal"}</div>
+              <div class="item-valor">${formatarMoeda(item.valor)}</div>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="item">
+            <div class="item-topo">
+              <div class="item-data">${formatarData(item.data)}</div>
+              <div class="badge adiantamento-badge">Adiantamento</div>
+            </div>
+            <div class="item-servico">💸 ${item.descricao}</div>
+            <div class="item-valor">${formatarMoeda(item.valor)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function atualizarResumo(lista) {
+      const diarias = lista.filter(item => item.categoria === "diaria");
+      const adiantamentos = lista.filter(item => item.categoria === "adiantamento");
+
+      const totalDiarias = diarias.reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalAdiantamentos = adiantamentos.reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalLiquido = totalDiarias - totalAdiantamentos;
+      const totalPago = diarias.filter(item => item.status === "pago").reduce((s, item) => s + Number(item.valor || 0), 0);
+      const totalPendente = diarias.filter(item => item.status === "pendente").reduce((s, item) => s + Number(item.valor || 0), 0);
+
+      els.totalDiarias.textContent = formatarMoeda(totalDiarias);
+      els.totalAdiantamentos.textContent = formatarMoeda(totalAdiantamentos);
+      els.totalLiquido.textContent = formatarMoeda(totalLiquido);
+      els.totalPago.textContent = formatarMoeda(totalPago);
+      els.totalPendente.textContent = formatarMoeda(totalPendente);
+      els.quantidadeTotal.textContent = String(lista.length);
+    }
+
+    function renderizar() {
+      const lista = carregarDados();
+      renderListaDiarias(lista);
+      renderListaAdiantamentos(lista);
+      renderListaGeral(lista);
+      atualizarResumo(lista);
+    }
+
+    function configurarAbas() {
+      const botoes = document.querySelectorAll(".tab-btn");
+      const secoes = document.querySelectorAll(".section");
+
+      botoes.forEach(botao => {
+        botao.addEventListener("click", function () {
+          const alvo = botao.getAttribute("data-tab");
+
+          botoes.forEach(b => b.classList.remove("active"));
+          secoes.forEach(s => s.classList.remove("active"));
+
+          botao.classList.add("active");
+          $(alvo).classList.add("active");
+        });
+      });
+    }
+
+    window.excluirLancamento = excluirLancamento;
+    window.marcarComoPago = marcarComoPago;
+
+    els.tipoDiaria.addEventListener("change", atualizarPreviewDiaria);
+    els.multiplicadorDiaria.addEventListener("change", atualizarPreviewDiaria);
+    els.btnAdicionarDiaria.addEventListener("click", adicionarDiaria);
+    els.btnAdicionarAdiantamento.addEventListener("click", adicionarAdiantamento);
+
+    atualizarPreviewDiaria();
+    configurarAbas();
+    renderizar();
+  </script>
 </body>
 </html>
