@@ -15,16 +15,13 @@ body {
   color:white;
 }
 
-/* TOPO */
 .topo {
   background:linear-gradient(135deg,#020617,#1d4ed8);
   padding:20px;
 }
 
-/* ABAS */
 .tabs {
   display:flex;
-  background:#020617;
 }
 
 .tab {
@@ -40,56 +37,41 @@ body {
   border-bottom:3px solid #3b82f6;
 }
 
-/* SEÇÕES */
 .section {display:none;padding:16px}
 .section.active {display:block}
 
-/* CARD */
 .card {
   background:#111827;
   padding:14px;
-  border-radius:14px;
+  border-radius:12px;
   margin-bottom:12px;
 }
 
-/* INPUT */
 input,select {
   width:100%;
-  padding:12px;
-  margin-bottom:10px;
-  border-radius:10px;
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:8px;
   border:none;
   background:#1e293b;
   color:white;
 }
 
-/* BOTÃO */
 button {
   width:100%;
-  padding:14px;
+  padding:10px;
   border:none;
-  border-radius:10px;
+  border-radius:8px;
   background:#2563eb;
   color:white;
-  margin-top:5px;
 }
 
-/* LISTA */
 .item {
   background:#1e293b;
   padding:10px;
-  border-radius:10px;
-  margin-bottom:10px;
-}
-
-.badge {
-  padding:4px 8px;
   border-radius:8px;
-  font-size:12px;
+  margin-bottom:8px;
 }
-
-.pago {background:#16a34a}
-.pendente {background:#f59e0b}
 
 </style>
 </head>
@@ -161,7 +143,6 @@ button {
 <h3>Resumo por mês</h3>
 
 <input type="month" id="mes">
-
 <button onclick="gerarPDF()">Gerar PDF</button>
 
 <p>Total diárias: <strong id="tDiaria">0</strong></p>
@@ -197,15 +178,18 @@ function calcValor(tipo,calc){
 
 function addDiaria(){
 
-  if(!dataDiaria.value || !descDiaria.value){
+  let data = document.getElementById("dataDiaria").value
+  let desc = document.getElementById("descDiaria").value
+
+  if(!data || !desc){
     alert("Preencha tudo")
     return
   }
 
   dados.unshift({
     tipo:"diaria",
-    data:dataDiaria.value,
-    desc:descDiaria.value,
+    data:data,
+    desc:desc,
     valor:calcValor(tipoDiaria.value,tipoCalc.value),
     status:status.value
   })
@@ -216,16 +200,20 @@ function addDiaria(){
 
 function addAdiantamento(){
 
-  if(!dataAd.value || !descAd.value || !valorAd.value){
+  let data = document.getElementById("dataAd").value
+  let desc = document.getElementById("descAd").value
+  let valor = document.getElementById("valorAd").value
+
+  if(!data || !desc || !valor){
     alert("Preencha tudo")
     return
   }
 
   dados.unshift({
     tipo:"adiantamento",
-    data:dataAd.value,
-    desc:descAd.value,
-    valor:Number(valorAd.value)
+    data:data,
+    desc:desc,
+    valor:Number(valor)
   })
 
   salvar()
@@ -248,7 +236,6 @@ function render(){
       <strong>${i.desc}</strong><br>
       ${i.data}<br>
       R$ ${i.valor}
-      <span class="badge ${i.status}">${i.status}</span>
       <button onclick="excluir(${index})">Excluir</button>
     </div>
   `).join("")
@@ -266,7 +253,7 @@ function render(){
 
 function atualizarResumo(){
 
-  let mesSel = mes.value
+  let mesSel = document.getElementById("mes").value
 
   let lista = dados.filter(i=>{
     if(!mesSel) return true
@@ -295,7 +282,7 @@ function gerarPDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  let mesSel = mes.value || "geral"
+  let mesSel = document.getElementById("mes").value || "geral"
 
   let lista = dados.filter(i=>{
     if(!mesSel) return true
@@ -315,7 +302,7 @@ function gerarPDF(){
   doc.save("resumo.pdf")
 }
 
-mes.addEventListener("change",atualizarResumo)
+document.getElementById("mes").addEventListener("change",atualizarResumo)
 
 render()
 
