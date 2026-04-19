@@ -491,698 +491,652 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      getDocs,
-      doc,
-      updateDoc,
-      deleteDoc,
-      query,
-      orderBy
-    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    doc,
+    updateDoc,
+    deleteDoc,
+    query,
+    orderBy
+  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
-      authDomain: "controle-diarias-4627b.firebaseapp.com",
-      projectId: "controle-diarias-4627b",
-      storageBucket: "controle-diarias-4627b.firebasestorage.app",
-      messagingSenderId: "432274053982",
-      appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
+    authDomain: "controle-diarias-4627b.firebaseapp.com",
+    projectId: "controle-diarias-4627b",
+    storageBucket: "controle-diarias-4627b.firebasestorage.app",
+    messagingSenderId: "432274053982",
+    appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
+  };
 
-    const appFirebase = initializeApp(firebaseConfig);
-    const auth = getAuth(appFirebase);
-    const db = getFirestore(appFirebase);
+  const appFirebase = initializeApp(firebaseConfig);
+  const auth = getAuth(appFirebase);
+  const db = getFirestore(appFirebase);
 
-    let usuarioAtual = null;
-    let dbLocal = [];
-    let editandoId = null;
-    let editandoCategoria = null;
+  let usuarioAtual = null;
+  let dbLocal = [];
+  let editandoId = null;
+  let editandoCategoria = null;
 
-    const $ = (id) => document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
-    const els = {
-      telaLogin: $("telaLogin"),
-      app: $("app"),
-      loginEmail: $("loginEmail"),
-      loginSenha: $("loginSenha"),
-      btnEntrar: $("btnEntrar"),
-      btnCadastrar: $("btnCadastrar"),
-      loginMsg: $("loginMsg"),
-      btnLogout: $("btnLogout"),
-      userInfo: $("userInfo"),
+  const els = {
+    telaLogin: $("telaLogin"),
+    app: $("app"),
+    loginEmail: $("loginEmail"),
+    loginSenha: $("loginSenha"),
+    btnEntrar: $("btnEntrar"),
+    btnCadastrar: $("btnCadastrar"),
+    loginMsg: $("loginMsg"),
+    btnLogout: $("btnLogout"),
+    userInfo: $("userInfo"),
 
-      tabs: document.querySelectorAll(".tab"),
-      sections: document.querySelectorAll(".section"),
+    tabs: document.querySelectorAll(".tab"),
+    sections: document.querySelectorAll(".section"),
 
-      dataDiaria: $("dataDiaria"),
-      descDiaria: $("descDiaria"),
-      tipoDiaria: $("tipoDiaria"),
-      calcDiaria: $("calcDiaria"),
-      statusDiaria: $("statusDiaria"),
-      previewValor: $("previewValor"),
-      btnAddDiaria: $("btnAddDiaria"),
+    dataDiaria: $("dataDiaria"),
+    descDiaria: $("descDiaria"),
+    tipoDiaria: $("tipoDiaria"),
+    calcDiaria: $("calcDiaria"),
+    statusDiaria: $("statusDiaria"),
+    previewValor: $("previewValor"),
+    btnAddDiaria: $("btnAddDiaria"),
 
-      dataAd: $("dataAd"),
-      descAd: $("descAd"),
-      valorAd: $("valorAd"),
-      btnAddAd: $("btnAddAd"),
+    dataAd: $("dataAd"),
+    descAd: $("descAd"),
+    valorAd: $("valorAd"),
+    btnAddAd: $("btnAddAd"),
 
-      filtroMes: $("filtroMes"),
-      btnMesAtual: $("btnMesAtual"),
-      btnPDF: $("btnPDF"),
+    filtroMes: $("filtroMes"),
+    btnMesAtual: $("btnMesAtual"),
+    btnPDF: $("btnPDF"),
 
-      listaDiarias: $("listaDiarias"),
-      listaAds: $("listaAds"),
-      listaResumo: $("listaResumo"),
+    listaDiarias: $("listaDiarias"),
+    listaAds: $("listaAds"),
+    listaResumo: $("listaResumo"),
 
-      totalDiarias: $("totalDiarias"),
-      totalAdiant: $("totalAdiant"),
-      totalLiquido: $("totalLiquido"),
-      totalPago: $("totalPago"),
-      totalPendente: $("totalPendente"),
-      quantidade: $("quantidade"),
-    };
+    totalDiarias: $("totalDiarias"),
+    totalAdiant: $("totalAdiant"),
+    totalLiquido: $("totalLiquido"),
+    totalPago: $("totalPago"),
+    totalPendente: $("totalPendente"),
+    quantidade: $("quantidade"),
+  };
 
-    function mostrarErro(msg) {
-      els.loginMsg.textContent = msg;
-    }
-
-    function limparErro() {
-      els.loginMsg.textContent = "";
-    }
-
-    function moeda(v) {
-      return Number(v || 0).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-      });
-    }
-
-    function dataBR(data) {
-      if (!data) return "-";
-      const [ano, mes, dia] = data.split("-");
-      return `${dia}/${mes}/${ano}`;
-    }
-
-    function mesAtual() {
-      const hoje = new Date();
-      return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
-    }
-
-    function valorDiaria() {
-      const base = els.tipoDiaria.value === "rua" ? 200 : 100;
-      return els.calcDiaria.value === "dobra" ? base * 2 : base;
-    }
-
-    function atualizarPreview() {
-      els.previewValor.textContent = moeda(valorDiaria());
-    }
-
-    function trocarTab(nome) {
-      els.tabs.forEach(tab => {
-        tab.classList.toggle("active", tab.dataset.tab === nome);
-      });
-      els.sections.forEach(sec => {
-        sec.classList.toggle("active", sec.id === nome);
-      });
-    }
-
-    function obterFiltrados() {
-      const mes = els.filtroMes.value;
-      if (!mes) return dbLocal;
-      return dbLocal.filter(item => item.data && item.data.startsWith(mes));
-    }
-
-    function resetFormDiaria() {
-      els.dataDiaria.value = "";
-      els.descDiaria.value = "";
-      els.tipoDiaria.value = "rua";
-      els.calcDiaria.value = "normal";
-      els.statusDiaria.value = "pendente";
-      els.btnAddDiaria.textContent = "Adicionar diária";
-      atualizarPreview();
-    }
-
-    function resetFormAd() {
-      els.dataAd.value = "";
-      els.descAd.value = "";
-      els.valorAd.value = "";
-      els.btnAddAd.textContent = "Adicionar adiantamento";
-    }
-
-    function limparEdicao() {
-      editandoId = null;
-      editandoCategoria = null;
-      resetFormDiaria();
-      resetFormAd();
-    }
-
-    function colecaoLancamentos() {
-      return collection(db, "users", usuarioAtual.uid, "lancamentos");
-    }
-
-    async function carregarLancamentosNuvem() {
-      if (!usuarioAtual) return;
-      const q = query(colecaoLancamentos(), orderBy("data", "desc"));
-      const snapshot = await getDocs(q);
-      dbLocal = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }));
-      render();
-    }
-
-    async function adicionarDiaria() {
-  try {
-    const data = els.dataDiaria.value;
-    const desc = els.descDiaria.value.trim();
-
-    if (!data || !desc) {
-      alert("Preencha a data e a descrição.");
-      return;
-    }
-
-    if (!usuarioAtual) {
-      alert("Usuário não está logado.");
-      return;
-    }
-
-    const item = {
-      categoria: "diaria",
-      data,
-      desc,
-      tipo: els.tipoDiaria.value,
-      calc: els.calcDiaria.value,
-      valor: valorDiaria(),
-      status: els.statusDiaria.value
-    };
-
-    if (editandoId && editandoCategoria === "diaria") {
-      await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
-    } else {
-      await addDoc(colecaoLancamentos(), item);
-    }
-
-    alert("Diária salva com sucesso!");
-    limparEdicao();
-    await carregarLancamentosNuvem();
-  } catch (e) {
-    console.error("ERRO AO SALVAR DIÁRIA:", e);
-    alert("Erro ao salvar diária: " + (e.message || e));
+  function mostrarErro(msg) {
+    els.loginMsg.textContent = msg;
   }
-}
-      try {
-        const data = els.dataDiaria.value;
-        const desc = els.descDiaria.value.trim();
 
-        if (!data || !desc) {
-          alert("Preencha a data e a descrição.");
-          return;
-        }
-
-        if (!usuarioAtual) {
-          alert("Usuário não está logado.");
-          return;
-        }
-
-        const item = {
-          categoria: "diaria",
-          data,
-          desc,
-          tipo: els.tipoDiaria.value,
-          calc: els.calcDiaria.value,
-          valor: valorDiaria(),
-          status: els.statusDiaria.value
-        };
-
-        console.log("SALVANDO DIÁRIA:", item);
-        console.log("UID:", usuarioAtual.uid);
-
-        if (editandoId && editandoCategoria === "diaria") {
-          await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
-        } else {
-          await addDoc(colecaoLancamentos(), item);
-        }
-
-        alert("Diária salva com sucesso!");
-        limparEdicao();
-        await carregarLancamentosNuvem();
-      } catch (e) {
-        console.error("ERRO AO SALVAR DIÁRIA:", e);
-        alert("Erro ao salvar diária: " + (e.message || e));
-      }
-    }
-
-    async function adicionarAdiantamento() {
-  try {
-    const data = els.dataAd.value;
-    const desc = els.descAd.value.trim();
-    const valor = parseFloat(els.valorAd.value || "0");
-
-    if (!data || !desc || !valor) {
-      alert("Preencha data, descrição e valor.");
-      return;
-    }
-
-    if (!usuarioAtual) {
-      alert("Usuário não está logado.");
-      return;
-    }
-
-    const item = {
-      categoria: "adiantamento",
-      data,
-      desc,
-      valor
-    };
-
-    if (editandoId && editandoCategoria === "adiantamento") {
-      await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
-    } else {
-      await addDoc(colecaoLancamentos(), item);
-    }
-
-    alert("Adiantamento salvo com sucesso!");
-    limparEdicao();
-    await carregarLancamentosNuvem();
-  } catch (e) {
-    console.error("ERRO AO SALVAR ADIANTAMENTO:", e);
-    alert("Erro ao salvar adiantamento: " + (e.message || e));
+  function limparErro() {
+    els.loginMsg.textContent = "";
   }
-}
-      try {
-        const data = els.dataAd.value;
-        const desc = els.descAd.value.trim();
-        const valor = parseFloat(els.valorAd.value || "0");
 
-        if (!data || !desc || !valor) {
-          alert("Preencha data, descrição e valor.");
-          return;
-        }
+  function moeda(v) {
+    return Number(v || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    });
+  }
 
-        if (!usuarioAtual) {
-          alert("Usuário não está logado.");
-          return;
-        }
+  function dataBR(data) {
+    if (!data) return "-";
+    const [ano, mes, dia] = data.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
 
-        const item = {
-          categoria: "adiantamento",
-          data,
-          desc,
-          valor
-        };
+  function mesAtual() {
+    const hoje = new Date();
+    return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+  }
 
-        console.log("SALVANDO ADIANTAMENTO:", item);
-        console.log("UID:", usuarioAtual.uid);
+  function valorDiaria() {
+    const base = els.tipoDiaria.value === "rua" ? 200 : 100;
+    return els.calcDiaria.value === "dobra" ? base * 2 : base;
+  }
 
-        if (editandoId && editandoCategoria === "adiantamento") {
-          await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
-        } else {
-          await addDoc(colecaoLancamentos(), item);
-        }
+  function atualizarPreview() {
+    els.previewValor.textContent = moeda(valorDiaria());
+  }
 
-        alert("Adiantamento salvo com sucesso!");
-        limparEdicao();
-        await carregarLancamentosNuvem();
-      } catch (e) {
-        console.error("ERRO AO SALVAR ADIANTAMENTO:", e);
-        alert("Erro ao salvar adiantamento: " + (e.message || e));
-      }
-    }
-
-    async function excluirItem(id) {
-      await deleteDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", id));
-      await carregarLancamentosNuvem();
-    }
-
-    async function marcarPago(id) {
-      const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
-      if (!item) return;
-      await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", id), {
-        ...item,
-        status: "pago"
-      });
-      await carregarLancamentosNuvem();
-    }
-
-    function editarDiaria(id) {
-      const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
-      if (!item) return;
-
-      editandoId = item.id;
-      editandoCategoria = "diaria";
-
-      els.dataDiaria.value = item.data;
-      els.descDiaria.value = item.desc;
-      els.tipoDiaria.value = item.tipo;
-      els.calcDiaria.value = item.calc;
-      els.statusDiaria.value = item.status;
-
-      els.btnAddDiaria.textContent = "Salvar edição";
-      atualizarPreview();
-      trocarTab("diarias");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function editarAdiantamento(id) {
-      const item = dbLocal.find(i => i.id === id && i.categoria === "adiantamento");
-      if (!item) return;
-
-      editandoId = item.id;
-      editandoCategoria = "adiantamento";
-
-      els.dataAd.value = item.data;
-      els.descAd.value = item.desc;
-      els.valorAd.value = item.valor;
-
-      els.btnAddAd.textContent = "Salvar edição";
-      trocarTab("adiantamentos");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function renderDiarias(lista) {
-      const diarias = lista.filter(item => item.categoria === "diaria");
-
-      if (!diarias.length) {
-        els.listaDiarias.innerHTML = '<div class="empty">Nenhuma diária lançada.</div>';
-        return;
-      }
-
-      els.listaDiarias.innerHTML = diarias.map(item => `
-        <div class="item">
-          <div class="item-topo">
-            <div class="muted">${dataBR(item.data)}</div>
-            <div class="badge ${item.status === "pago" ? "pago" : "pendente"}">${item.status === "pago" ? "Pago" : "Pendente"}</div>
-          </div>
-          <div class="servico">${item.desc}</div>
-          <div class="muted">${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "dobra" ? "Dobra" : "Normal"}</div>
-          <div class="valor">${moeda(item.valor)}</div>
-          <div class="acoes">
-            <button class="btn-secondary" onclick="editarDiaria('${item.id}')">Editar</button>
-            ${item.status !== "pago" ? `<button class="btn-pay" onclick="marcarPago('${item.id}')">Marcar pago</button>` : ""}
-            <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    function renderAdiantamentos(lista) {
-      const ads = lista.filter(item => item.categoria === "adiantamento");
-
-      if (!ads.length) {
-        els.listaAds.innerHTML = '<div class="empty">Nenhum adiantamento lançado.</div>';
-        return;
-      }
-
-      els.listaAds.innerHTML = ads.map(item => `
-        <div class="item">
-          <div class="item-topo">
-            <div class="muted">${dataBR(item.data)}</div>
-            <div class="badge adiantamento">Adiantamento</div>
-          </div>
-          <div class="servico">${item.desc}</div>
-          <div class="valor">${moeda(item.valor)}</div>
-          <div class="acoes">
-            <button class="btn-secondary" onclick="editarAdiantamento('${item.id}')">Editar</button>
-            <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
-          </div>
-        </div>
-      `).join("");
-    }
-
-    function renderResumo(lista) {
-      if (!lista.length) {
-        els.listaResumo.innerHTML = '<div class="empty">Nenhum lançamento neste mês.</div>';
-      } else {
-        els.listaResumo.innerHTML = lista.map(item => `
-          <div class="item">
-            <div class="item-topo">
-              <div class="muted">${dataBR(item.data)}</div>
-              <div class="badge ${item.categoria === "adiantamento" ? "adiantamento" : (item.status === "pago" ? "pago" : "pendente")}">
-                ${item.categoria === "adiantamento" ? "Adiantamento" : (item.status === "pago" ? "Pago" : "Pendente")}
-              </div>
-            </div>
-            <div class="servico">${item.desc}</div>
-            <div class="muted">${item.categoria === "diaria" ? `${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "dobra" ? "Dobra" : "Normal"}` : "Valor adiantado"}</div>
-            <div class="valor">${moeda(item.valor)}</div>
-          </div>
-        `).join("");
-      }
-
-      const diarias = lista.filter(item => item.categoria === "diaria");
-      const ads = lista.filter(item => item.categoria === "adiantamento");
-
-      const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
-      const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
-      const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
-      const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
-
-      els.totalDiarias.textContent = moeda(totalDiarias);
-      els.totalAdiant.textContent = moeda(totalAds);
-      els.totalLiquido.textContent = moeda(totalDiarias - totalAds);
-      els.totalPago.textContent = moeda(totalPago);
-      els.totalPendente.textContent = moeda(totalPendente);
-      els.quantidade.textContent = String(lista.length);
-    }
-
-    function gerarPDF() {
-      const lista = obterFiltrados();
-
-      if (!lista.length) {
-        alert("Não há lançamentos neste mês para gerar PDF.");
-        return;
-      }
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF("p", "mm", "a4");
-
-      const mes = els.filtroMes.value || "geral";
-      const diarias = lista.filter(item => item.categoria === "diaria");
-      const ads = lista.filter(item => item.categoria === "adiantamento");
-
-      const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
-      const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
-      const totalLiquido = totalDiarias - totalAds;
-      const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
-      const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 12;
-      const usable = pageWidth - margin * 2;
-      let y = 14;
-
-      function rgb(hex) {
-        const h = hex.replace("#", "");
-        return [
-          parseInt(h.substring(0, 2), 16),
-          parseInt(h.substring(2, 4), 16),
-          parseInt(h.substring(4, 6), 16)
-        ];
-      }
-
-      function needPage(h = 10) {
-        if (y + h > pageHeight - 12) {
-          doc.addPage();
-          y = 14;
-          headerTable();
-        }
-      }
-
-      function titleBox() {
-        doc.setFillColor(...rgb("1D4ED8"));
-        doc.roundedRect(margin, y, usable, 18, 3, 3, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.text("Relatório de Diárias", margin + 4, y + 7);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(`Mês: ${mes}`, margin + 4, y + 13);
-        doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - margin - 4, y + 13, { align: "right" });
-        doc.setTextColor(0, 0, 0);
-        y += 24;
-      }
-
-      function resumoLinha(label, value) {
-        needPage(8);
-        doc.setDrawColor(220, 220, 220);
-        doc.roundedRect(margin, y, usable, 8, 1.5, 1.5);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-        doc.text(label, margin + 3, y + 5.3);
-        doc.setFont("helvetica", "bold");
-        doc.text(value, pageWidth - margin - 3, y + 5.3, { align: "right" });
-        y += 10;
-      }
-
-      function headerTable() {
-        doc.setFillColor(30, 41, 59);
-        doc.rect(margin, y, usable, 8, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(9);
-        doc.text("Data", margin + 2, y + 5.3);
-        doc.text("Tipo", margin + 24, y + 5.3);
-        doc.text("Descrição", margin + 46, y + 5.3);
-        doc.text("Valor", margin + 130, y + 5.3);
-        doc.text("Status", margin + 160, y + 5.3);
-        doc.setTextColor(0, 0, 0);
-        y += 8;
-      }
-
-      function line(item, idx) {
-        const data = dataBR(item.data);
-        const tipo = item.categoria === "diaria"
-          ? (item.tipo === "rua" ? "Rua" : "Depósito")
-          : "Adiant.";
-        const desc = item.desc || "-";
-        const valor = moeda(item.valor);
-        const status = item.categoria === "diaria"
-          ? (item.status === "pago" ? "Pago" : "Pendente")
-          : "-";
-
-        const descLines = doc.splitTextToSize(desc, 78);
-        const tipoLines = doc.splitTextToSize(tipo, 18);
-        const statusLines = doc.splitTextToSize(status, 18);
-        const lines = Math.max(descLines.length, tipoLines.length, statusLines.length, 1);
-        const h = Math.max(8, lines * 4 + 2);
-
-        needPage(h);
-
-        if (idx % 2 === 0) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(margin, y, usable, h, "F");
-        }
-
-        doc.setDrawColor(220, 220, 220);
-        doc.rect(margin, y, usable, h);
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8.5);
-        doc.text(data, margin + 2, y + 5);
-        doc.text(tipoLines, margin + 24, y + 5);
-        doc.text(descLines, margin + 46, y + 5);
-        doc.text(valor, margin + 130, y + 5);
-        doc.text(statusLines, margin + 160, y + 5);
-
-        y += h;
-      }
-
-      titleBox();
-      resumoLinha("Total diárias", moeda(totalDiarias));
-      resumoLinha("Adiantamentos", moeda(totalAds));
-      resumoLinha("Líquido a receber", moeda(totalLiquido));
-      resumoLinha("Total pago", moeda(totalPago));
-      resumoLinha("Total pendente", moeda(totalPendente));
-
-      y += 4;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("Lançamentos do mês", margin, y);
-      y += 6;
-
-      headerTable();
-      lista.forEach((item, idx) => line(item, idx));
-
-      doc.save(`relatorio-${mes}.pdf`);
-    }
-
-    function render() {
-      const listaFiltrada = obterFiltrados();
-      renderDiarias(dbLocal);
-      renderAdiantamentos(dbLocal);
-      renderResumo(listaFiltrada);
-    }
-
+  function trocarTab(nome) {
     els.tabs.forEach(tab => {
-      tab.addEventListener("click", () => trocarTab(tab.dataset.tab));
+      tab.classList.toggle("active", tab.dataset.tab === nome);
     });
-
-    els.tipoDiaria.addEventListener("change", atualizarPreview);
-    els.calcDiaria.addEventListener("change", atualizarPreview);
-    els.btnAddDiaria.addEventListener("click", adicionarDiaria);
-    els.btnAddAd.addEventListener("click", adicionarAdiantamento);
-    els.filtroMes.addEventListener("change", render);
-    els.btnMesAtual.addEventListener("click", () => {
-      els.filtroMes.value = mesAtual();
-      render();
+    els.sections.forEach(sec => {
+      sec.classList.toggle("active", sec.id === nome);
     });
-    els.btnPDF.addEventListener("click", gerarPDF);
+  }
 
-    els.btnCadastrar.addEventListener("click", async () => {
-      limparErro();
+  function obterFiltrados() {
+    const mes = els.filtroMes.value;
+    if (!mes) return dbLocal;
+    return dbLocal.filter(item => item.data && item.data.startsWith(mes));
+  }
 
-      const email = els.loginEmail.value.trim();
-      const senha = els.loginSenha.value.trim();
+  function resetFormDiaria() {
+    els.dataDiaria.value = "";
+    els.descDiaria.value = "";
+    els.tipoDiaria.value = "rua";
+    els.calcDiaria.value = "normal";
+    els.statusDiaria.value = "pendente";
+    els.btnAddDiaria.textContent = "Adicionar diária";
+    atualizarPreview();
+  }
 
-      if (!email || !senha) {
-        mostrarErro("Preencha e-mail e senha.");
+  function resetFormAd() {
+    els.dataAd.value = "";
+    els.descAd.value = "";
+    els.valorAd.value = "";
+    els.btnAddAd.textContent = "Adicionar adiantamento";
+  }
+
+  function limparEdicao() {
+    editandoId = null;
+    editandoCategoria = null;
+    resetFormDiaria();
+    resetFormAd();
+  }
+
+  function colecaoLancamentos() {
+    return collection(db, "users", usuarioAtual.uid, "lancamentos");
+  }
+
+  async function carregarLancamentosNuvem() {
+    if (!usuarioAtual) return;
+    const q = query(colecaoLancamentos(), orderBy("data", "desc"));
+    const snapshot = await getDocs(q);
+    dbLocal = snapshot.docs.map(docSnap => ({
+      id: docSnap.id,
+      ...docSnap.data()
+    }));
+    render();
+  }
+
+  async function adicionarDiaria() {
+    try {
+      const data = els.dataDiaria.value;
+      const desc = els.descDiaria.value.trim();
+
+      if (!data || !desc) {
+        alert("Preencha a data e a descrição.");
         return;
       }
 
-      try {
-        await createUserWithEmailAndPassword(auth, email, senha);
-      } catch (e) {
-        mostrarErro("Erro ao criar conta:\n" + (e.message || e.code || e));
-      }
-    });
-
-    els.btnEntrar.addEventListener("click", async () => {
-      limparErro();
-
-      const email = els.loginEmail.value.trim();
-      const senha = els.loginSenha.value.trim();
-
-      if (!email || !senha) {
-        mostrarErro("Preencha e-mail e senha.");
+      if (!usuarioAtual) {
+        alert("Usuário não está logado.");
         return;
       }
 
-      try {
-        await signInWithEmailAndPassword(auth, email, senha);
-      } catch (e) {
-        mostrarErro("Erro ao entrar:\n" + (e.message || e.code || e));
-      }
-    });
+      const item = {
+        categoria: "diaria",
+        data,
+        desc,
+        tipo: els.tipoDiaria.value,
+        calc: els.calcDiaria.value,
+        valor: valorDiaria(),
+        status: els.statusDiaria.value
+      };
 
-    els.btnLogout.addEventListener("click", async () => {
-      await signOut(auth);
-    });
+      console.log("SALVANDO DIÁRIA:", item);
+      console.log("UID:", usuarioAtual.uid);
 
-    window.excluirItem = excluirItem;
-    window.marcarPago = marcarPago;
-    window.editarDiaria = editarDiaria;
-    window.editarAdiantamento = editarAdiantamento;
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        usuarioAtual = user;
-        els.userInfo.textContent = user.email || "";
-        els.telaLogin.style.display = "none";
-        els.app.style.display = "block";
-        els.filtroMes.value = mesAtual();
-        atualizarPreview();
-        await carregarLancamentosNuvem();
+      if (editandoId && editandoCategoria === "diaria") {
+        await updateDoc(
+          doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId),
+          item
+        );
       } else {
-        usuarioAtual = null;
-        dbLocal = [];
-        els.userInfo.textContent = "";
-        els.telaLogin.style.display = "flex";
-        els.app.style.display = "none";
+        await addDoc(colecaoLancamentos(), item);
       }
-    });
+
+      alert("Diária salva com sucesso!");
+      limparEdicao();
+      await carregarLancamentosNuvem();
+    } catch (e) {
+      console.error("ERRO AO SALVAR DIÁRIA:", e);
+      alert("Erro ao salvar diária: " + (e.message || e));
+    }
+  }
+
+  async function adicionarAdiantamento() {
+    try {
+      const data = els.dataAd.value;
+      const desc = els.descAd.value.trim();
+      const valor = parseFloat(els.valorAd.value || "0");
+
+      if (!data || !desc || !valor) {
+        alert("Preencha data, descrição e valor.");
+        return;
+      }
+
+      if (!usuarioAtual) {
+        alert("Usuário não está logado.");
+        return;
+      }
+
+      const item = {
+        categoria: "adiantamento",
+        data,
+        desc,
+        valor
+      };
+
+      console.log("SALVANDO ADIANTAMENTO:", item);
+      console.log("UID:", usuarioAtual.uid);
+
+      if (editandoId && editandoCategoria === "adiantamento") {
+        await updateDoc(
+          doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId),
+          item
+        );
+      } else {
+        await addDoc(colecaoLancamentos(), item);
+      }
+
+      alert("Adiantamento salvo com sucesso!");
+      limparEdicao();
+      await carregarLancamentosNuvem();
+    } catch (e) {
+      console.error("ERRO AO SALVAR ADIANTAMENTO:", e);
+      alert("Erro ao salvar adiantamento: " + (e.message || e));
+    }
+  }
+
+  async function excluirItem(id) {
+    await deleteDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", id));
+    await carregarLancamentosNuvem();
+  }
+
+  async function marcarPago(id) {
+    const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
+    if (!item) return;
+    await updateDoc(
+      doc(db, "users", usuarioAtual.uid, "lancamentos", id),
+      { ...item, status: "pago" }
+    );
+    await carregarLancamentosNuvem();
+  }
+
+  function editarDiaria(id) {
+    const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
+    if (!item) return;
+
+    editandoId = item.id;
+    editandoCategoria = "diaria";
+
+    els.dataDiaria.value = item.data;
+    els.descDiaria.value = item.desc;
+    els.tipoDiaria.value = item.tipo;
+    els.calcDiaria.value = item.calc;
+    els.statusDiaria.value = item.status;
+
+    els.btnAddDiaria.textContent = "Salvar edição";
+    atualizarPreview();
+    trocarTab("diarias");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function editarAdiantamento(id) {
+    const item = dbLocal.find(i => i.id === id && i.categoria === "adiantamento");
+    if (!item) return;
+
+    editandoId = item.id;
+    editandoCategoria = "adiantamento";
+
+    els.dataAd.value = item.data;
+    els.descAd.value = item.desc;
+    els.valorAd.value = item.valor;
+
+    els.btnAddAd.textContent = "Salvar edição";
+    trocarTab("adiantamentos");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderDiarias(lista) {
+    const diarias = lista.filter(item => item.categoria === "diaria");
+
+    if (!diarias.length) {
+      els.listaDiarias.innerHTML = '<div class="empty">Nenhuma diária lançada.</div>';
+      return;
+    }
+
+    els.listaDiarias.innerHTML = diarias.map(item => `
+      <div class="item">
+        <div class="item-topo">
+          <div class="muted">${dataBR(item.data)}</div>
+          <div class="badge ${item.status === "pago" ? "pago" : "pendente"}">
+            ${item.status === "pago" ? "Pago" : "Pendente"}
+          </div>
+        </div>
+        <div class="servico">${item.desc}</div>
+        <div class="muted">
+          ${item.tipo === "rua" ? "Rua" : "Depósito"} •
+          ${item.calc === "dobra" ? "Dobra" : "Normal"}
+        </div>
+        <div class="valor">${moeda(item.valor)}</div>
+        <div class="acoes">
+          <button class="btn-secondary" onclick="editarDiaria('${item.id}')">Editar</button>
+          ${item.status !== "pago"
+            ? `<button class="btn-pay" onclick="marcarPago('${item.id}')">Marcar pago</button>`
+            : ""
+          }
+          <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderAdiantamentos(lista) {
+    const ads = lista.filter(item => item.categoria === "adiantamento");
+
+    if (!ads.length) {
+      els.listaAds.innerHTML = '<div class="empty">Nenhum adiantamento lançado.</div>';
+      return;
+    }
+
+    els.listaAds.innerHTML = ads.map(item => `
+      <div class="item">
+        <div class="item-topo">
+          <div class="muted">${dataBR(item.data)}</div>
+          <div class="badge adiantamento">Adiantamento</div>
+        </div>
+        <div class="servico">${item.desc}</div>
+        <div class="valor">${moeda(item.valor)}</div>
+        <div class="acoes">
+          <button class="btn-secondary" onclick="editarAdiantamento('${item.id}')">Editar</button>
+          <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderResumo(lista) {
+    if (!lista.length) {
+      els.listaResumo.innerHTML = '<div class="empty">Nenhum lançamento neste mês.</div>';
+    } else {
+      els.listaResumo.innerHTML = lista.map(item => `
+        <div class="item">
+          <div class="item-topo">
+            <div class="muted">${dataBR(item.data)}</div>
+            <div class="badge ${
+              item.categoria === "adiantamento"
+                ? "adiantamento"
+                : (item.status === "pago" ? "pago" : "pendente")
+            }">
+              ${
+                item.categoria === "adiantamento"
+                  ? "Adiantamento"
+                  : (item.status === "pago" ? "Pago" : "Pendente")
+              }
+            </div>
+          </div>
+          <div class="servico">${item.desc}</div>
+          <div class="muted">
+            ${
+              item.categoria === "diaria"
+                ? `${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "dobra" ? "Dobra" : "Normal"}`
+                : "Valor adiantado"
+            }
+          </div>
+          <div class="valor">${moeda(item.valor)}</div>
+        </div>
+      `).join("");
+    }
+
+    const diarias = lista.filter(item => item.categoria === "diaria");
+    const ads = lista.filter(item => item.categoria === "adiantamento");
+
+    const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
+    const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
+    const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
+    const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
+
+    els.totalDiarias.textContent = moeda(totalDiarias);
+    els.totalAdiant.textContent = moeda(totalAds);
+    els.totalLiquido.textContent = moeda(totalDiarias - totalAds);
+    els.totalPago.textContent = moeda(totalPago);
+    els.totalPendente.textContent = moeda(totalPendente);
+    els.quantidade.textContent = String(lista.length);
+  }
+
+  function gerarPDF() {
+    const lista = obterFiltrados();
+
+    if (!lista.length) {
+      alert("Não há lançamentos neste mês para gerar PDF.");
+      return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const docPdf = new jsPDF("p", "mm", "a4");
+
+    const mes = els.filtroMes.value || "geral";
+    const diarias = lista.filter(item => item.categoria === "diaria");
+    const ads = lista.filter(item => item.categoria === "adiantamento");
+
+    const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
+    const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
+    const totalLiquido = totalDiarias - totalAds;
+    const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
+    const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
+
+    const pageWidth = docPdf.internal.pageSize.getWidth();
+    const pageHeight = docPdf.internal.pageSize.getHeight();
+    const margin = 12;
+    const usable = pageWidth - margin * 2;
+    let y = 14;
+
+    function rgb(hex) {
+      const h = hex.replace("#", "");
+      return [
+        parseInt(h.substring(0, 2), 16),
+        parseInt(h.substring(2, 4), 16),
+        parseInt(h.substring(4, 6), 16)
+      ];
+    }
+
+    function needPage(h = 10) {
+      if (y + h > pageHeight - 12) {
+        docPdf.addPage();
+        y = 14;
+        headerTable();
+      }
+    }
+
+    function titleBox() {
+      docPdf.setFillColor(...rgb("1D4ED8"));
+      docPdf.roundedRect(margin, y, usable, 18, 3, 3, "F");
+      docPdf.setTextColor(255, 255, 255);
+      docPdf.setFont("helvetica", "bold");
+      docPdf.setFontSize(18);
+      docPdf.text("Relatório de Diárias", margin + 4, y + 7);
+      docPdf.setFont("helvetica", "normal");
+      docPdf.setFontSize(10);
+      docPdf.text(`Mês: ${mes}`, margin + 4, y + 13);
+      docPdf.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - margin - 4, y + 13, { align: "right" });
+      docPdf.setTextColor(0, 0, 0);
+      y += 24;
+    }
+
+    function resumoLinha(label, value) {
+      needPage(8);
+      docPdf.setDrawColor(220, 220, 220);
+      docPdf.roundedRect(margin, y, usable, 8, 1.5, 1.5);
+      docPdf.setFont("helvetica", "normal");
+      docPdf.setFontSize(10);
+      docPdf.text(label, margin + 3, y + 5.3);
+      docPdf.setFont("helvetica", "bold");
+      docPdf.text(value, pageWidth - margin - 3, y + 5.3, { align: "right" });
+      y += 10;
+    }
+
+    function headerTable() {
+      docPdf.setFillColor(30, 41, 59);
+      docPdf.rect(margin, y, usable, 8, "F");
+      docPdf.setTextColor(255, 255, 255);
+      docPdf.setFont("helvetica", "bold");
+      docPdf.setFontSize(9);
+      docPdf.text("Data", margin + 2, y + 5.3);
+      docPdf.text("Tipo", margin + 24, y + 5.3);
+      docPdf.text("Descrição", margin + 46, y + 5.3);
+      docPdf.text("Valor", margin + 130, y + 5.3);
+      docPdf.text("Status", margin + 160, y + 5.3);
+      docPdf.setTextColor(0, 0, 0);
+      y += 8;
+    }
+
+    function line(item, idx) {
+      const data = dataBR(item.data);
+      const tipo = item.categoria === "diaria"
+        ? (item.tipo === "rua" ? "Rua" : "Depósito")
+        : "Adiant.";
+      const desc = item.desc || "-";
+      const valor = moeda(item.valor);
+      const status = item.categoria === "diaria"
+        ? (item.status === "pago" ? "Pago" : "Pendente")
+        : "-";
+
+      const descLines = docPdf.splitTextToSize(desc, 78);
+      const tipoLines = docPdf.splitTextToSize(tipo, 18);
+      const statusLines = docPdf.splitTextToSize(status, 18);
+      const lines = Math.max(descLines.length, tipoLines.length, statusLines.length, 1);
+      const h = Math.max(8, lines * 4 + 2);
+
+      needPage(h);
+
+      if (idx % 2 === 0) {
+        docPdf.setFillColor(248, 250, 252);
+        docPdf.rect(margin, y, usable, h, "F");
+      }
+
+      docPdf.setDrawColor(220, 220, 220);
+      docPdf.rect(margin, y, usable, h);
+
+      docPdf.setFont("helvetica", "normal");
+      docPdf.setFontSize(8.5);
+      docPdf.text(data, margin + 2, y + 5);
+      docPdf.text(tipoLines, margin + 24, y + 5);
+      docPdf.text(descLines, margin + 46, y + 5);
+      docPdf.text(valor, margin + 130, y + 5);
+      docPdf.text(statusLines, margin + 160, y + 5);
+
+      y += h;
+    }
+
+    titleBox();
+    resumoLinha("Total diárias", moeda(totalDiarias));
+    resumoLinha("Adiantamentos", moeda(totalAds));
+    resumoLinha("Líquido a receber", moeda(totalLiquido));
+    resumoLinha("Total pago", moeda(totalPago));
+    resumoLinha("Total pendente", moeda(totalPendente));
+
+    y += 4;
+    docPdf.setFont("helvetica", "bold");
+    docPdf.setFontSize(12);
+    docPdf.text("Lançamentos do mês", margin, y);
+    y += 6;
+
+    headerTable();
+    lista.forEach((item, idx) => line(item, idx));
+
+    docPdf.save(`relatorio-${mes}.pdf`);
+  }
+
+  function render() {
+    const listaFiltrada = obterFiltrados();
+    renderDiarias(dbLocal);
+    renderAdiantamentos(dbLocal);
+    renderResumo(listaFiltrada);
+  }
+
+  els.tabs.forEach(tab => {
+    tab.addEventListener("click", () => trocarTab(tab.dataset.tab));
+  });
+
+  els.tipoDiaria.addEventListener("change", atualizarPreview);
+  els.calcDiaria.addEventListener("change", atualizarPreview);
+  els.btnAddDiaria.addEventListener("click", adicionarDiaria);
+  els.btnAddAd.addEventListener("click", adicionarAdiantamento);
+  els.filtroMes.addEventListener("change", render);
+  els.btnMesAtual.addEventListener("click", () => {
+    els.filtroMes.value = mesAtual();
+    render();
+  });
+  els.btnPDF.addEventListener("click", gerarPDF);
+
+  els.btnCadastrar.addEventListener("click", async () => {
+    limparErro();
+
+    const email = els.loginEmail.value.trim();
+    const senha = els.loginSenha.value.trim();
+
+    if (!email || !senha) {
+      mostrarErro("Preencha e-mail e senha.");
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, senha);
+    } catch (e) {
+      mostrarErro("Erro ao criar conta:\n" + (e.message || e.code || e));
+    }
+  });
+
+  els.btnEntrar.addEventListener("click", async () => {
+    limparErro();
+
+    const email = els.loginEmail.value.trim();
+    const senha = els.loginSenha.value.trim();
+
+    if (!email || !senha) {
+      mostrarErro("Preencha e-mail e senha.");
+      return;
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+    } catch (e) {
+      mostrarErro("Erro ao entrar:\n" + (e.message || e.code || e));
+    }
+  });
+
+  els.btnLogout.addEventListener("click", async () => {
+    await signOut(auth);
+  });
+
+  window.excluirItem = excluirItem;
+  window.marcarPago = marcarPago;
+  window.editarDiaria = editarDiaria;
+  window.editarAdiantamento = editarAdiantamento;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      usuarioAtual = user;
+      els.userInfo.textContent = user.email || "";
+      els.telaLogin.style.display = "none";
+      els.app.style.display = "block";
+      els.filtroMes.value = mesAtual();
+      atualizarPreview();
+      await carregarLancamentosNuvem();
+    } else {
+      usuarioAtual = null;
+      dbLocal = [];
+      els.userInfo.textContent = "";
+      els.telaLogin.style.display = "flex";
+      els.app.style.display = "none";
+    }
+  });
   </script>
 </body>
 </html>
