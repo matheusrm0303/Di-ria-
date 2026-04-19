@@ -7,87 +7,240 @@
 
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-<style>
-body{margin:0;background:#020617;color:#fff;font-family:Arial}
-.app{max-width:500px;margin:auto;padding:15px}
-.topo{font-size:22px;font-weight:bold;margin-bottom:15px}
+<script>
+let db = JSON.parse(localStorage.getItem("db_prof")) || [];
 
-.tabs{display:flex;margin-bottom:10px}
-.tab{flex:1;padding:10px;text-align:center;background:#111827;margin:2px;border-radius:8px;color:#94a3b8}
-.tab.active{background:#2563eb;color:#fff}
+function salvar() {
+  localStorage.setItem("db_prof", JSON.stringify(db));
+}
 
-.card{background:#111827;padding:12px;border-radius:12px;margin-bottom:10px}
+function tab(id, el) {
+  document.getElementById("d").style.display = "none";
+  document.getElementById("a").style.display = "none";
+  document.getElementById("r").style.display = "none";
 
-input,select{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:none;background:#1e293b;color:#fff}
+  document.getElementById(id).style.display = "block";
 
-button{padding:10px;border:none;border-radius:8px;margin-top:5px}
-.btn{background:#2563eb;color:#fff;width:100%}
-.btn2{background:#16a34a;color:#fff}
-.btn3{background:#dc2626;color:#fff}
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+}
 
-.item{background:#1e293b;padding:10px;border-radius:10px;margin-bottom:8px}
+function valorDiaria() {
+  const tipo = document.getElementById("tipo").value;
+  const calc = document.getElementById("calc").value;
+  let base = tipo === "rua" ? 200 : 100;
+  return calc === "d" ? base * 2 : base;
+}
 
-</style>
-</head>
+function add() {
+  const data = document.getElementById("data").value;
+  const desc = document.getElementById("desc").value.trim();
+  const tipo = document.getElementById("tipo").value;
+  const calc = document.getElementById("calc").value;
+  const status = document.getElementById("status").value;
 
-<body>
-<div class="app">
+  if (!data || !desc) {
+    alert("Preencha a data e o serviço.");
+    return;
+  }
 
-<div class="topo">💼 Controle Profissional</div>
+  db.unshift({
+    id: Date.now(),
+    categoria: "diaria",
+    data,
+    desc,
+    tipo,
+    calc,
+    valor: valorDiaria(),
+    status
+  });
 
-<div class="tabs">
-<div class="tab active" onclick="tab('d',this)">Diárias</div>
-<div class="tab" onclick="tab('a',this)">Adiant.</div>
-<div class="tab" onclick="tab('r',this)">Resumo</div>
-</div>
+  salvar();
 
-<div id="d">
-<div class="card">
-<input type="date" id="data">
-<input type="text" id="desc" placeholder="Serviço">
-<select id="tipo">
-<option value="rua">Rua 200</option>
-<option value="dep">Depósito 100</option>
-</select>
-<select id="calc">
-<option value="n">Normal</option>
-<option value="d">Dobra</option>
-</select>
-<select id="status">
-<option value="pendente">Pendente</option>
-<option value="pago">Pago</option>
-</select>
+  document.getElementById("data").value = "";
+  document.getElementById("desc").value = "";
+  document.getElementById("tipo").value = "rua";
+  document.getElementById("calc").value = "n";
+  document.getElementById("status").value = "pendente";
 
-<button class="btn" onclick="add()">Adicionar</button>
-</div>
+  render();
+}
 
-<div id="lista"></div>
-</div>
+function addA() {
+  const data = document.getElementById("dataA").value;
+  const desc = document.getElementById("descA").value.trim();
+  const valor = Number(document.getElementById("valA").value || 0);
 
-<div id="a" style="display:none">
-<div class="card">
-<input type="date" id="dataA">
-<input type="text" id="descA">
-<input type="number" id="valA">
+  if (!data || !desc || !valor) {
+    alert("Preencha data, descrição e valor.");
+    return;
+  }
 
-<button class="btn" onclick="addA()">Adicionar</button>
-</div>
+  db.unshift({
+    id: Date.now(),
+    categoria: "adiantamento",
+    data,
+    desc,
+    valor
+  });
 
-<div id="listaA"></div>
-</div>
+  salvar();
 
-<div id="r" style="display:none">
-<div class="card">
-<input type="month" id="mes">
-<button class="btn2" onclick="mesAtual()">Mês atual</button>
-<button class="btn" onclick="pdf()">Gerar PDF</button>
+  document.getElementById("dataA").value = "";
+  document.getElementById("descA").value = "";
+  document.getElementById("valA").value = "";
 
-<p>Total: <span id="t"></span></p>
-<p>Adiant.: <span id="ta"></span></p>
-<p>Líquido: <span id="tl"></span></p>
-</div>
+  render();
+}
 
-<div id="listaR"></div>
-</div>
+function del(id) {
+  db = db.filter(item => item.id !== id);
+  salvar();
+  render();
+}
 
-</div>
+function marcarPago(id) {
+  db = db.map(item => {
+    if (item.id === id && item.categoria === "diaria") {
+      return { ...item, status: "pago" };
+    }
+    return item;
+  });
+  salvar();
+  render();
+}
+
+function formatarMoeda(v) {
+  return Number(v || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  });
+}
+
+function mesAtual() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  document.getElementById("mes").value = `${ano}-${mes}`;
+  render();
+}
+
+function filtro() {
+  const mes = document.getElementById("mes").value;
+  if (!mes) return db;
+  return db.filter(item => item.data && item.data.startsWith(mes));
+}
+
+function render() {
+  const lista = document.getElementById("lista");
+  const listaA = document.getElementById("listaA");
+  const listaR = document.getElementById("listaR");
+  const t = document.getElementById("t");
+  const ta = document.getElementById("ta");
+  const tl = document.getElementById("tl");
+
+  const diarias = db.filter(item => item.categoria === "diaria");
+  const adiantamentos = db.filter(item => item.categoria === "adiantamento");
+  const filtrados = filtro();
+
+  lista.innerHTML = diarias.length ? diarias.map(item => `
+    <div class="item">
+      <div><strong>${item.desc}</strong></div>
+      <div>${item.data}</div>
+      <div>${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "d" ? "Dobra" : "Normal"}</div>
+      <div>${formatarMoeda(item.valor)} • ${item.status}</div>
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        ${item.status !== "pago" ? `<button class="btn2" onclick="marcarPago(${item.id})">Marcar pago</button>` : ""}
+        <button class="btn3" onclick="del(${item.id})">Excluir</button>
+      </div>
+    </div>
+  `).join("") : `<div class="item">Sem diárias lançadas.</div>`;
+
+  listaA.innerHTML = adiantamentos.length ? adiantamentos.map(item => `
+    <div class="item">
+      <div><strong>${item.desc}</strong></div>
+      <div>${item.data}</div>
+      <div>${formatarMoeda(item.valor)}</div>
+      <button class="btn3" onclick="del(${item.id})">Excluir</button>
+    </div>
+  `).join("") : `<div class="item">Sem adiantamentos lançados.</div>`;
+
+  const totalDiarias = filtrados
+    .filter(item => item.categoria === "diaria")
+    .reduce((s, item) => s + Number(item.valor || 0), 0);
+
+  const totalAdiant = filtrados
+    .filter(item => item.categoria === "adiantamento")
+    .reduce((s, item) => s + Number(item.valor || 0), 0);
+
+  t.textContent = formatarMoeda(totalDiarias);
+  ta.textContent = formatarMoeda(totalAdiant);
+  tl.textContent = formatarMoeda(totalDiarias - totalAdiant);
+
+  listaR.innerHTML = filtrados.length ? filtrados.map(item => `
+    <div class="item">
+      ${item.data} • ${item.desc} • ${formatarMoeda(item.valor)}
+      ${item.categoria === "diaria" ? `• ${item.status}` : "• adiantamento"}
+    </div>
+  `).join("") : `<div class="item">Sem lançamentos nesse mês.</div>`;
+}
+
+function pdf() {
+  const filtrados = filtro();
+  if (!filtrados.length) {
+    alert("Sem dados para gerar PDF.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const mes = document.getElementById("mes").value || "geral";
+
+  let y = 15;
+  doc.setFontSize(16);
+  doc.text("Relatório de Diárias", 14, y);
+  y += 8;
+  doc.setFontSize(11);
+  doc.text(`Mês: ${mes}`, 14, y);
+  y += 10;
+
+  const totalDiarias = filtrados
+    .filter(item => item.categoria === "diaria")
+    .reduce((s, item) => s + Number(item.valor || 0), 0);
+
+  const totalAdiant = filtrados
+    .filter(item => item.categoria === "adiantamento")
+    .reduce((s, item) => s + Number(item.valor || 0), 0);
+
+  doc.text(`Total diárias: ${formatarMoeda(totalDiarias)}`, 14, y);
+  y += 6;
+  doc.text(`Adiantamentos: ${formatarMoeda(totalAdiant)}`, 14, y);
+  y += 6;
+  doc.text(`Líquido: ${formatarMoeda(totalDiarias - totalAdiant)}`, 14, y);
+  y += 10;
+
+  filtrados.forEach((item, i) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 15;
+    }
+    doc.text(
+      `${i + 1}. ${item.data} | ${item.desc} | ${formatarMoeda(item.valor)} | ${item.categoria === "diaria" ? item.status : "adiantamento"}`,
+      14,
+      y
+    );
+    y += 7;
+  });
+
+  doc.save(`relatorio-${mes}.pdf`);
+}
+
+document.getElementById("mes").addEventListener("change", render);
+
+mesAtual();
+render();
+</script>
+
+</body>
+</html>
