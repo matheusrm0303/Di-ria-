@@ -694,7 +694,7 @@
         if (editandoId && editandoCategoria === "diaria") {
           await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
         } else {
-          await addDoc(collection(db, "users", usuarioAtual.uid, "lancamentos"), item);
+          await addDoc(colecaoLancamentos(), item);
         }
 
         alert("Diária salva com sucesso!");
@@ -735,7 +735,7 @@
         if (editandoId && editandoCategoria === "adiantamento") {
           await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
         } else {
-          await addDoc(collection(db, "users", usuarioAtual.uid, "lancamentos"), item);
+          await addDoc(colecaoLancamentos(), item);
         }
 
         alert("Adiantamento salvo com sucesso!");
