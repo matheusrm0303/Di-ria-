@@ -2,96 +2,222 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Controle" />
   <title>Controle de Diárias</title>
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4bc.png" />
+
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
   <style>
-    * { box-sizing: border-box; font-family: Arial, sans-serif; }
-    body {
-      margin: 0;
-      background: linear-gradient(180deg, #020617 0%, #07122b 100%);
-      color: #fff;
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      font-family: Arial, sans-serif;
     }
+
+    :root {
+      --bg: #020617;
+      --bg-soft: #0b1220;
+      --card: rgba(17, 24, 39, 0.96);
+      --card-2: #1e293b;
+      --line: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --blue: #2563eb;
+      --blue-2: #1d4ed8;
+      --green: #16a34a;
+      --red: #dc2626;
+      --yellow: #f59e0b;
+      --shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+      --radius: 20px;
+    }
+
+    html, body {
+      margin: 0;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-soft) 100%);
+      color: var(--text);
+      min-height: 100%;
+    }
+
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 430px;
+      background: var(--card);
+      border: 1px solid #1f2937;
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .login-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      display: grid;
+      place-items: center;
+      font-size: 30px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.3);
+      margin-bottom: 14px;
+    }
+
+    .login-card h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .login-card p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
     .app {
       max-width: 560px;
       margin: 0 auto;
-      padding: 16px;
-      padding-bottom: 80px;
+      padding: 16px 16px 92px;
     }
+
     .topo {
-      background: linear-gradient(135deg, #0f172a, #1d4ed8);
-      padding: 22px 18px;
-      border-radius: 0 0 24px 24px;
-      margin: -16px -16px 18px -16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin: -16px -16px 16px;
+      padding: 20px 16px 14px;
+      background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(29, 78, 216, 0.9));
+      backdrop-filter: blur(12px);
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+      box-shadow: var(--shadow);
     }
+
     .topo-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
     }
+
     .topo h1 {
       margin: 0;
       font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
     }
+
     .topo p {
       margin: 8px 0 0;
-      color: #cbd5e1;
+      color: #dbeafe;
       font-size: 14px;
     }
+
     .user-info {
       margin-top: 8px;
       color: #bfdbfe;
       font-size: 13px;
       word-break: break-word;
     }
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .tab {
-      flex: 1;
-      border: none;
-      border-radius: 14px;
-      padding: 12px;
-      background: #111827;
-      color: #94a3b8;
-      font-size: 15px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .tab.active {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: #fff;
-      box-shadow: 0 8px 20px rgba(37,99,235,0.25);
-    }
-    .section { display: none; }
-    .section.active { display: block; }
 
-    .card {
-      background: rgba(17, 24, 39, 0.95);
+    .install-hint {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 10px 0 16px;
+      background: rgba(15, 23, 42, 0.88);
       border: 1px solid #1f2937;
       border-radius: 18px;
+      padding: 6px;
+      box-shadow: var(--shadow);
+    }
+
+    .tab {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .2s ease;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.26);
+    }
+
+    .section {
+      display: none;
+      animation: fadeUp .22s ease;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid #1f2937;
+      border-radius: var(--radius);
       padding: 16px;
       margin-bottom: 14px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.18);
+      box-shadow: var(--shadow);
     }
+
     .card h2 {
       margin: 0 0 8px;
       font-size: 20px;
     }
+
     .sub {
       margin: 0 0 14px;
-      color: #94a3b8;
+      color: var(--muted);
       font-size: 14px;
       line-height: 1.45;
     }
 
-    .grid { display: grid; gap: 12px; }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+
     .grid2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -102,161 +228,201 @@
       display: block;
       margin-bottom: 6px;
       font-size: 13px;
-      font-weight: bold;
+      font-weight: 700;
       color: #cbd5e1;
     }
 
     input, select {
       width: 100%;
-      padding: 12px 13px;
-      border-radius: 12px;
-      border: 1px solid #334155;
-      background: #1e293b;
+      border: 1px solid var(--line);
+      background: var(--card-2);
       color: #fff;
+      border-radius: 14px;
+      padding: 13px 14px;
       font-size: 16px;
       outline: none;
+      transition: .18s ease;
     }
 
     input:focus, select:focus {
       border-color: #60a5fa;
-      box-shadow: 0 0 0 3px rgba(96,165,250,0.16);
+      box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.16);
     }
 
     button {
       border: none;
-      border-radius: 12px;
-      padding: 12px;
+      border-radius: 14px;
+      padding: 13px 14px;
       font-size: 15px;
-      font-weight: bold;
+      font-weight: 700;
       cursor: pointer;
-      transition: 0.18s;
+      transition: .18s ease;
     }
 
     button:active {
-      transform: scale(0.98);
+      transform: scale(.98);
     }
 
     .btn-primary {
       width: 100%;
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
       color: #fff;
+      background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
     }
+
     .btn-secondary {
       background: #334155;
       color: #fff;
       flex: 1;
       min-width: 120px;
     }
-    .btn-pdf {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: #fff;
-      width: 100%;
-    }
+
     .btn-pay {
-      background: linear-gradient(135deg, #22c55e, #16a34a);
+      background: linear-gradient(135deg, #22c55e, var(--green));
       color: #fff;
       flex: 1;
       min-width: 120px;
     }
+
     .btn-del {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
+      background: linear-gradient(135deg, #ef4444, var(--red));
       color: #fff;
       flex: 1;
       min-width: 120px;
     }
+
+    .btn-pdf {
+      width: 100%;
+      color: #fff;
+      background: linear-gradient(135deg, #ef4444, var(--red));
+    }
+
     .btn-logout {
       background: rgba(15, 23, 42, 0.9);
       color: #fff;
-      padding: 10px 12px;
-      font-size: 13px;
+      border: 1px solid rgba(255,255,255,0.15);
       white-space: nowrap;
-      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .btn-install {
+      margin-top: 10px;
+      width: 100%;
+      display: none;
+      color: #fff;
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
     }
 
     .preview {
       background: linear-gradient(135deg, #172554, #1d4ed8);
       border: 1px solid #3b82f6;
-      border-radius: 14px;
+      border-radius: 18px;
       padding: 16px;
       text-align: center;
     }
+
     .preview span {
       display: block;
-      color: #bfdbfe;
+      color: #dbeafe;
       font-size: 12px;
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
+      letter-spacing: 0.5px;
     }
+
     .preview strong {
       font-size: 28px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: #1e293b;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .stat-box strong {
+      font-size: 20px;
     }
 
     .lista {
       display: grid;
       gap: 12px;
     }
+
     .item {
       background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
       padding: 14px;
     }
+
     .item-topo {
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
       gap: 10px;
       margin-bottom: 8px;
-      align-items: flex-start;
     }
-    .muted { color: #94a3b8; }
+
+    .muted {
+      color: var(--muted);
+    }
+
     .servico {
       font-size: 17px;
-      font-weight: bold;
+      font-weight: 800;
       margin: 6px 0;
+      line-height: 1.35;
     }
+
     .valor {
       font-size: 22px;
-      font-weight: bold;
+      font-weight: 800;
       margin-top: 8px;
     }
+
     .badge {
       padding: 6px 10px;
       border-radius: 999px;
       font-size: 12px;
-      font-weight: bold;
+      font-weight: 800;
       white-space: nowrap;
     }
-    .pago { background: #dcfce7; color: #166534; }
-    .pendente { background: #fef3c7; color: #92400e; }
-    .adiantamento { background: #ede9fe; color: #6d28d9; }
+
+    .pago {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .pendente {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .adiantamento {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
     .acoes {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
       flex-wrap: wrap;
-    }
-
-    .resumo {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .box {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 14px;
-      padding: 14px;
-      text-align: center;
-    }
-    .box span {
-      display: block;
-      font-size: 12px;
-      color: #94a3b8;
-      margin-bottom: 6px;
-    }
-    .box strong {
-      font-size: 20px;
+      margin-top: 12px;
     }
 
     .btn-grid {
@@ -268,77 +434,88 @@
 
     .empty {
       text-align: center;
-      color: #94a3b8;
+      color: var(--muted);
       background: #0f172a;
-      border: 1px dashed #334155;
-      border-radius: 14px;
-      padding: 16px;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      padding: 18px;
     }
 
-    .login-wrap {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(15, 23, 42, 0.95);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: .25s ease;
+      z-index: 50;
+      max-width: 90%;
+      text-align: center;
     }
-    .login-card {
-      width: 100%;
-      max-width: 430px;
-      background: rgba(17, 24, 39, 0.96);
-      border: 1px solid #1f2937;
-      border-radius: 22px;
-      padding: 24px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.28);
-    }
-    .login-card h2 {
-      margin: 0 0 6px;
-      font-size: 28px;
-    }
-    .login-card p {
-      color: #94a3b8;
-      margin-bottom: 16px;
-      line-height: 1.45;
-    }
-    .login-msg {
-      margin-top: 12px;
-      color: #fca5a5;
-      font-size: 14px;
-      min-height: 20px;
-      white-space: pre-wrap;
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
     @media (max-width: 430px) {
-      .grid2, .resumo, .btn-grid { grid-template-columns: 1fr; }
-      .topo-row { align-items: flex-start; flex-direction: column; }
+      .grid2, .stats, .btn-grid {
+        grid-template-columns: 1fr;
+      }
+      .topo-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="telaLogin" class="login-wrap" style="display:none;">
+  <div id="telaLogin" class="login-wrap">
     <div class="login-card">
-      <h2>🔐 Entrar</h2>
-      <p>Entre com seu e-mail e senha para acessar seu controle de diárias na nuvem.</p>
+      <div class="login-logo">💼</div>
+      <h1>Controle</h1>
+      <p>Entre com seu e-mail e senha para acessar suas diárias sincronizadas na nuvem.</p>
 
-      <input id="loginEmail" type="email" placeholder="Seu e-mail" />
-      <input id="loginSenha" type="password" placeholder="Sua senha" style="margin-top:10px;" />
+      <div class="grid">
+        <div>
+          <label>E-mail</label>
+          <input id="loginEmail" type="email" placeholder="Seu e-mail" />
+        </div>
+
+        <div>
+          <label>Senha</label>
+          <input id="loginSenha" type="password" placeholder="Sua senha" />
+        </div>
+      </div>
 
       <button id="btnEntrar" class="btn-primary" style="margin-top:14px;">Entrar</button>
       <button id="btnCadastrar" class="btn-secondary" style="width:100%; margin-top:10px;">Criar conta</button>
 
-      <div id="loginMsg" class="login-msg"></div>
+      <div id="loginMsg" class="muted" style="margin-top:12px; white-space:pre-wrap;"></div>
     </div>
   </div>
 
-  <div class="app" id="app" style="display:none;">
+  <div class="app hidden" id="app">
     <div class="topo">
       <div class="topo-row">
         <div>
           <h1>💼 Controle</h1>
-          <p>Rua R$ 200 • Depósito R$ 100 • Nuvem ativa</p>
+          <p>Rua R$ 200 • Depósito R$ 100 • PWA</p>
           <div class="user-info" id="userInfo"></div>
         </div>
         <button class="btn-logout" id="btnLogout">Sair</button>
+      </div>
+
+      <button class="btn-install" id="btnInstall">Instalar app</button>
+      <div class="install-hint" id="installHint">
+        No iPhone, toque em Compartilhar → “Adicionar à Tela de Início”.
       </div>
     </div>
 
@@ -455,28 +632,28 @@
 
       <div class="card">
         <h2>📊 Resumo</h2>
-        <div class="resumo">
-          <div class="box">
+        <div class="stats">
+          <div class="stat-box">
             <span>Total diárias</span>
             <strong id="totalDiarias">R$ 0,00</strong>
           </div>
-          <div class="box">
+          <div class="stat-box">
             <span>Adiantamentos</span>
             <strong id="totalAdiant">R$ 0,00</strong>
           </div>
-          <div class="box">
+          <div class="stat-box">
             <span>Líquido</span>
             <strong id="totalLiquido">R$ 0,00</strong>
           </div>
-          <div class="box">
+          <div class="stat-box">
             <span>Total pago</span>
             <strong id="totalPago">R$ 0,00</strong>
           </div>
-          <div class="box">
+          <div class="stat-box">
             <span>Total pendente</span>
             <strong id="totalPendente">R$ 0,00</strong>
           </div>
-          <div class="box">
+          <div class="stat-box">
             <span>Quantidade</span>
             <strong id="quantidade">0</strong>
           </div>
@@ -490,653 +667,667 @@
     </div>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-  import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-  import {
-    getFirestore,
-    collection,
-    addDoc,
-    getDocs,
-    doc,
-    updateDoc,
-    deleteDoc,
-    query,
-    orderBy
-  } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      doc,
+      updateDoc,
+      deleteDoc,
+      query,
+      orderBy
+    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
-    authDomain: "controle-diarias-4627b.firebaseapp.com",
-    projectId: "controle-diarias-4627b",
-    storageBucket: "controle-diarias-4627b.firebasestorage.app",
-    messagingSenderId: "432274053982",
-    appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
+      authDomain: "controle-diarias-4627b.firebaseapp.com",
+      projectId: "controle-diarias-4627b",
+      storageBucket: "controle-diarias-4627b.firebasestorage.app",
+      messagingSenderId: "432274053982",
+      appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
+    };
 
-  const appFirebase = initializeApp(firebaseConfig);
-  const auth = getAuth(appFirebase);
-  const db = getFirestore(appFirebase);
+    const appFirebase = initializeApp(firebaseConfig);
+    const auth = getAuth(appFirebase);
+    const db = getFirestore(appFirebase);
 
-  let usuarioAtual = null;
-  let dbLocal = [];
-  let editandoId = null;
-  let editandoCategoria = null;
+    let usuarioAtual = null;
+    let dbLocal = [];
+    let editandoId = null;
+    let editandoCategoria = null;
+    let deferredPrompt = null;
 
-  const $ = (id) => document.getElementById(id);
+    const $ = (id) => document.getElementById(id);
 
-  const els = {
-    telaLogin: $("telaLogin"),
-    app: $("app"),
-    loginEmail: $("loginEmail"),
-    loginSenha: $("loginSenha"),
-    btnEntrar: $("btnEntrar"),
-    btnCadastrar: $("btnCadastrar"),
-    loginMsg: $("loginMsg"),
-    btnLogout: $("btnLogout"),
-    userInfo: $("userInfo"),
+    const els = {
+      telaLogin: $("telaLogin"),
+      app: $("app"),
+      loginEmail: $("loginEmail"),
+      loginSenha: $("loginSenha"),
+      btnEntrar: $("btnEntrar"),
+      btnCadastrar: $("btnCadastrar"),
+      loginMsg: $("loginMsg"),
+      btnLogout: $("btnLogout"),
+      userInfo: $("userInfo"),
+      btnInstall: $("btnInstall"),
+      installHint: $("installHint"),
+      toast: $("toast"),
 
-    tabs: document.querySelectorAll(".tab"),
-    sections: document.querySelectorAll(".section"),
+      tabs: document.querySelectorAll(".tab"),
+      sections: document.querySelectorAll(".section"),
 
-    dataDiaria: $("dataDiaria"),
-    descDiaria: $("descDiaria"),
-    tipoDiaria: $("tipoDiaria"),
-    calcDiaria: $("calcDiaria"),
-    statusDiaria: $("statusDiaria"),
-    previewValor: $("previewValor"),
-    btnAddDiaria: $("btnAddDiaria"),
+      dataDiaria: $("dataDiaria"),
+      descDiaria: $("descDiaria"),
+      tipoDiaria: $("tipoDiaria"),
+      calcDiaria: $("calcDiaria"),
+      statusDiaria: $("statusDiaria"),
+      previewValor: $("previewValor"),
+      btnAddDiaria: $("btnAddDiaria"),
 
-    dataAd: $("dataAd"),
-    descAd: $("descAd"),
-    valorAd: $("valorAd"),
-    btnAddAd: $("btnAddAd"),
+      dataAd: $("dataAd"),
+      descAd: $("descAd"),
+      valorAd: $("valorAd"),
+      btnAddAd: $("btnAddAd"),
 
-    filtroMes: $("filtroMes"),
-    btnMesAtual: $("btnMesAtual"),
-    btnPDF: $("btnPDF"),
+      filtroMes: $("filtroMes"),
+      btnMesAtual: $("btnMesAtual"),
+      btnPDF: $("btnPDF"),
 
-    listaDiarias: $("listaDiarias"),
-    listaAds: $("listaAds"),
-    listaResumo: $("listaResumo"),
+      listaDiarias: $("listaDiarias"),
+      listaAds: $("listaAds"),
+      listaResumo: $("listaResumo"),
 
-    totalDiarias: $("totalDiarias"),
-    totalAdiant: $("totalAdiant"),
-    totalLiquido: $("totalLiquido"),
-    totalPago: $("totalPago"),
-    totalPendente: $("totalPendente"),
-    quantidade: $("quantidade"),
-  };
+      totalDiarias: $("totalDiarias"),
+      totalAdiant: $("totalAdiant"),
+      totalLiquido: $("totalLiquido"),
+      totalPago: $("totalPago"),
+      totalPendente: $("totalPendente"),
+      quantidade: $("quantidade"),
+    };
 
-  function mostrarErro(msg) {
-    els.loginMsg.textContent = msg;
-  }
+    function toast(msg) {
+      els.toast.textContent = msg;
+      els.toast.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        els.toast.classList.remove("show");
+      }, 2200);
+    }
 
-  function limparErro() {
-    els.loginMsg.textContent = "";
-  }
+    function mostrarErro(msg) {
+      els.loginMsg.textContent = msg;
+    }
 
-  function moeda(v) {
-    return Number(v || 0).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL"
-    });
-  }
+    function limparErro() {
+      els.loginMsg.textContent = "";
+    }
 
-  function dataBR(data) {
-    if (!data) return "-";
-    const [ano, mes, dia] = data.split("-");
-    return `${dia}/${mes}/${ano}`;
-  }
+    function moeda(v) {
+      return Number(v || 0).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+      });
+    }
 
-  function mesAtual() {
-    const hoje = new Date();
-    return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
-  }
+    function dataBR(data) {
+      if (!data) return "-";
+      const [ano, mes, dia] = data.split("-");
+      return `${dia}/${mes}/${ano}`;
+    }
 
-  function valorDiaria() {
-    const base = els.tipoDiaria.value === "rua" ? 200 : 100;
-    return els.calcDiaria.value === "dobra" ? base * 2 : base;
-  }
+    function mesAtual() {
+      const hoje = new Date();
+      return `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
+    }
 
-  function atualizarPreview() {
-    els.previewValor.textContent = moeda(valorDiaria());
-  }
+    function valorDiaria() {
+      const base = els.tipoDiaria.value === "rua" ? 200 : 100;
+      return els.calcDiaria.value === "dobra" ? base * 2 : base;
+    }
 
-  function trocarTab(nome) {
-    els.tabs.forEach(tab => {
-      tab.classList.toggle("active", tab.dataset.tab === nome);
-    });
-    els.sections.forEach(sec => {
-      sec.classList.toggle("active", sec.id === nome);
-    });
-  }
+    function atualizarPreview() {
+      els.previewValor.textContent = moeda(valorDiaria());
+    }
 
-  function obterFiltrados() {
-    const mes = els.filtroMes.value;
-    if (!mes) return dbLocal;
-    return dbLocal.filter(item => item.data && item.data.startsWith(mes));
-  }
+    function trocarTab(nome) {
+      els.tabs.forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.tab === nome);
+      });
+      els.sections.forEach(sec => {
+        sec.classList.toggle("active", sec.id === nome);
+      });
+    }
 
-  function resetFormDiaria() {
-    els.dataDiaria.value = "";
-    els.descDiaria.value = "";
-    els.tipoDiaria.value = "rua";
-    els.calcDiaria.value = "normal";
-    els.statusDiaria.value = "pendente";
-    els.btnAddDiaria.textContent = "Adicionar diária";
-    atualizarPreview();
-  }
+    function obterFiltrados() {
+      const mes = els.filtroMes.value;
+      if (!mes) return dbLocal;
+      return dbLocal.filter(item => item.data && item.data.startsWith(mes));
+    }
 
-  function resetFormAd() {
-    els.dataAd.value = "";
-    els.descAd.value = "";
-    els.valorAd.value = "";
-    els.btnAddAd.textContent = "Adicionar adiantamento";
-  }
+    function resetFormDiaria() {
+      els.dataDiaria.value = "";
+      els.descDiaria.value = "";
+      els.tipoDiaria.value = "rua";
+      els.calcDiaria.value = "normal";
+      els.statusDiaria.value = "pendente";
+      els.btnAddDiaria.textContent = "Adicionar diária";
+      atualizarPreview();
+    }
 
-  function limparEdicao() {
-    editandoId = null;
-    editandoCategoria = null;
-    resetFormDiaria();
-    resetFormAd();
-  }
+    function resetFormAd() {
+      els.dataAd.value = "";
+      els.descAd.value = "";
+      els.valorAd.value = "";
+      els.btnAddAd.textContent = "Adicionar adiantamento";
+    }
 
-  function colecaoLancamentos() {
-    return collection(db, "users", usuarioAtual.uid, "lancamentos");
-  }
+    function limparEdicao() {
+      editandoId = null;
+      editandoCategoria = null;
+      resetFormDiaria();
+      resetFormAd();
+    }
 
-  async function carregarLancamentosNuvem() {
-    if (!usuarioAtual) return;
-    const q = query(colecaoLancamentos(), orderBy("data", "desc"));
-    const snapshot = await getDocs(q);
-    dbLocal = snapshot.docs.map(docSnap => ({
-      id: docSnap.id,
-      ...docSnap.data()
-    }));
-    render();
-  }
+    function colecaoLancamentos() {
+      return collection(db, "users", usuarioAtual.uid, "lancamentos");
+    }
 
-  async function adicionarDiaria() {
-    try {
-      const data = els.dataDiaria.value;
-      const desc = els.descDiaria.value.trim();
+    async function carregarLancamentosNuvem() {
+      if (!usuarioAtual) return;
+      const q = query(colecaoLancamentos(), orderBy("data", "desc"));
+      const snapshot = await getDocs(q);
+      dbLocal = snapshot.docs.map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }));
+      render();
+    }
 
-      if (!data || !desc) {
-        alert("Preencha a data e a descrição.");
-        return;
+    async function adicionarDiaria() {
+      try {
+        const data = els.dataDiaria.value;
+        const desc = els.descDiaria.value.trim();
+
+        if (!data || !desc) {
+          toast("Preencha a data e a descrição.");
+          return;
+        }
+
+        if (!usuarioAtual) {
+          toast("Usuário não está logado.");
+          return;
+        }
+
+        const item = {
+          categoria: "diaria",
+          data,
+          desc,
+          tipo: els.tipoDiaria.value,
+          calc: els.calcDiaria.value,
+          valor: valorDiaria(),
+          status: els.statusDiaria.value
+        };
+
+        if (editandoId && editandoCategoria === "diaria") {
+          await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
+          toast("Diária atualizada!");
+        } else {
+          await addDoc(colecaoLancamentos(), item);
+          toast("Diária salva com sucesso!");
+        }
+
+        limparEdicao();
+        await carregarLancamentosNuvem();
+      } catch (e) {
+        console.error("ERRO AO SALVAR DIÁRIA:", e);
+        toast("Erro ao salvar diária.");
       }
+    }
 
-      if (!usuarioAtual) {
-        alert("Usuário não está logado.");
-        return;
+    async function adicionarAdiantamento() {
+      try {
+        const data = els.dataAd.value;
+        const desc = els.descAd.value.trim();
+        const valor = parseFloat(els.valorAd.value || "0");
+
+        if (!data || !desc || !valor) {
+          toast("Preencha data, descrição e valor.");
+          return;
+        }
+
+        if (!usuarioAtual) {
+          toast("Usuário não está logado.");
+          return;
+        }
+
+        const item = {
+          categoria: "adiantamento",
+          data,
+          desc,
+          valor
+        };
+
+        if (editandoId && editandoCategoria === "adiantamento") {
+          await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
+          toast("Adiantamento atualizado!");
+        } else {
+          await addDoc(colecaoLancamentos(), item);
+          toast("Adiantamento salvo com sucesso!");
+        }
+
+        limparEdicao();
+        await carregarLancamentosNuvem();
+      } catch (e) {
+        console.error("ERRO AO SALVAR ADIANTAMENTO:", e);
+        toast("Erro ao salvar adiantamento.");
       }
+    }
 
-      const item = {
-        categoria: "diaria",
-        data,
-        desc,
-        tipo: els.tipoDiaria.value,
-        calc: els.calcDiaria.value,
-        valor: valorDiaria(),
-        status: els.statusDiaria.value
-      };
-
-      console.log("SALVANDO DIÁRIA:", item);
-      console.log("UID:", usuarioAtual.uid);
-
-      if (editandoId && editandoCategoria === "diaria") {
-        await updateDoc(
-          doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId),
-          item
-        );
-      } else {
-        await addDoc(colecaoLancamentos(), item);
-      }
-
-      alert("Diária salva com sucesso!");
-      limparEdicao();
+    async function excluirItem(id) {
+      await deleteDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", id));
+      toast("Lançamento excluído.");
       await carregarLancamentosNuvem();
-    } catch (e) {
-      console.error("ERRO AO SALVAR DIÁRIA:", e);
-      alert("Erro ao salvar diária: " + (e.message || e));
     }
-  }
 
-  async function adicionarAdiantamento() {
-    try {
-      const data = els.dataAd.value;
-      const desc = els.descAd.value.trim();
-      const valor = parseFloat(els.valorAd.value || "0");
-
-      if (!data || !desc || !valor) {
-        alert("Preencha data, descrição e valor.");
-        return;
-      }
-
-      if (!usuarioAtual) {
-        alert("Usuário não está logado.");
-        return;
-      }
-
-      const item = {
-        categoria: "adiantamento",
-        data,
-        desc,
-        valor
-      };
-
-      console.log("SALVANDO ADIANTAMENTO:", item);
-      console.log("UID:", usuarioAtual.uid);
-
-      if (editandoId && editandoCategoria === "adiantamento") {
-        await updateDoc(
-          doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId),
-          item
-        );
-      } else {
-        await addDoc(colecaoLancamentos(), item);
-      }
-
-      alert("Adiantamento salvo com sucesso!");
-      limparEdicao();
+    async function marcarPago(id) {
+      const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
+      if (!item) return;
+      await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", id), {
+        ...item,
+        status: "pago"
+      });
+      toast("Marcado como pago.");
       await carregarLancamentosNuvem();
-    } catch (e) {
-      console.error("ERRO AO SALVAR ADIANTAMENTO:", e);
-      alert("Erro ao salvar adiantamento: " + (e.message || e));
-    }
-  }
-
-  async function excluirItem(id) {
-    await deleteDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", id));
-    await carregarLancamentosNuvem();
-  }
-
-  async function marcarPago(id) {
-    const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
-    if (!item) return;
-    await updateDoc(
-      doc(db, "users", usuarioAtual.uid, "lancamentos", id),
-      { ...item, status: "pago" }
-    );
-    await carregarLancamentosNuvem();
-  }
-
-  function editarDiaria(id) {
-    const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
-    if (!item) return;
-
-    editandoId = item.id;
-    editandoCategoria = "diaria";
-
-    els.dataDiaria.value = item.data;
-    els.descDiaria.value = item.desc;
-    els.tipoDiaria.value = item.tipo;
-    els.calcDiaria.value = item.calc;
-    els.statusDiaria.value = item.status;
-
-    els.btnAddDiaria.textContent = "Salvar edição";
-    atualizarPreview();
-    trocarTab("diarias");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function editarAdiantamento(id) {
-    const item = dbLocal.find(i => i.id === id && i.categoria === "adiantamento");
-    if (!item) return;
-
-    editandoId = item.id;
-    editandoCategoria = "adiantamento";
-
-    els.dataAd.value = item.data;
-    els.descAd.value = item.desc;
-    els.valorAd.value = item.valor;
-
-    els.btnAddAd.textContent = "Salvar edição";
-    trocarTab("adiantamentos");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function renderDiarias(lista) {
-    const diarias = lista.filter(item => item.categoria === "diaria");
-
-    if (!diarias.length) {
-      els.listaDiarias.innerHTML = '<div class="empty">Nenhuma diária lançada.</div>';
-      return;
     }
 
-    els.listaDiarias.innerHTML = diarias.map(item => `
-      <div class="item">
-        <div class="item-topo">
-          <div class="muted">${dataBR(item.data)}</div>
-          <div class="badge ${item.status === "pago" ? "pago" : "pendente"}">
-            ${item.status === "pago" ? "Pago" : "Pendente"}
-          </div>
-        </div>
-        <div class="servico">${item.desc}</div>
-        <div class="muted">
-          ${item.tipo === "rua" ? "Rua" : "Depósito"} •
-          ${item.calc === "dobra" ? "Dobra" : "Normal"}
-        </div>
-        <div class="valor">${moeda(item.valor)}</div>
-        <div class="acoes">
-          <button class="btn-secondary" onclick="editarDiaria('${item.id}')">Editar</button>
-          ${item.status !== "pago"
-            ? `<button class="btn-pay" onclick="marcarPago('${item.id}')">Marcar pago</button>`
-            : ""
-          }
-          <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
-        </div>
-      </div>
-    `).join("");
-  }
+    function editarDiaria(id) {
+      const item = dbLocal.find(i => i.id === id && i.categoria === "diaria");
+      if (!item) return;
 
-  function renderAdiantamentos(lista) {
-    const ads = lista.filter(item => item.categoria === "adiantamento");
+      editandoId = item.id;
+      editandoCategoria = "diaria";
 
-    if (!ads.length) {
-      els.listaAds.innerHTML = '<div class="empty">Nenhum adiantamento lançado.</div>';
-      return;
+      els.dataDiaria.value = item.data;
+      els.descDiaria.value = item.desc;
+      els.tipoDiaria.value = item.tipo;
+      els.calcDiaria.value = item.calc;
+      els.statusDiaria.value = item.status;
+
+      els.btnAddDiaria.textContent = "Salvar edição";
+      atualizarPreview();
+      trocarTab("diarias");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast("Editando diária.");
     }
 
-    els.listaAds.innerHTML = ads.map(item => `
-      <div class="item">
-        <div class="item-topo">
-          <div class="muted">${dataBR(item.data)}</div>
-          <div class="badge adiantamento">Adiantamento</div>
-        </div>
-        <div class="servico">${item.desc}</div>
-        <div class="valor">${moeda(item.valor)}</div>
-        <div class="acoes">
-          <button class="btn-secondary" onclick="editarAdiantamento('${item.id}')">Editar</button>
-          <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
-        </div>
-      </div>
-    `).join("");
-  }
+    function editarAdiantamento(id) {
+      const item = dbLocal.find(i => i.id === id && i.categoria === "adiantamento");
+      if (!item) return;
 
-  function renderResumo(lista) {
-    if (!lista.length) {
-      els.listaResumo.innerHTML = '<div class="empty">Nenhum lançamento neste mês.</div>';
-    } else {
-      els.listaResumo.innerHTML = lista.map(item => `
+      editandoId = item.id;
+      editandoCategoria = "adiantamento";
+
+      els.dataAd.value = item.data;
+      els.descAd.value = item.desc;
+      els.valorAd.value = item.valor;
+
+      els.btnAddAd.textContent = "Salvar edição";
+      trocarTab("adiantamentos");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast("Editando adiantamento.");
+    }
+
+    function renderDiarias(lista) {
+      const diarias = lista.filter(item => item.categoria === "diaria");
+
+      if (!diarias.length) {
+        els.listaDiarias.innerHTML = '<div class="empty">Nenhuma diária lançada.</div>';
+        return;
+      }
+
+      els.listaDiarias.innerHTML = diarias.map(item => `
         <div class="item">
           <div class="item-topo">
             <div class="muted">${dataBR(item.data)}</div>
-            <div class="badge ${
-              item.categoria === "adiantamento"
-                ? "adiantamento"
-                : (item.status === "pago" ? "pago" : "pendente")
-            }">
-              ${
-                item.categoria === "adiantamento"
-                  ? "Adiantamento"
-                  : (item.status === "pago" ? "Pago" : "Pendente")
-              }
+            <div class="badge ${item.status === "pago" ? "pago" : "pendente"}">
+              ${item.status === "pago" ? "Pago" : "Pendente"}
             </div>
           </div>
+
           <div class="servico">${item.desc}</div>
-          <div class="muted">
-            ${
-              item.categoria === "diaria"
-                ? `${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "dobra" ? "Dobra" : "Normal"}`
-                : "Valor adiantado"
-            }
-          </div>
+          <div class="muted">${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "dobra" ? "Dobra" : "Normal"}</div>
           <div class="valor">${moeda(item.valor)}</div>
+
+          <div class="acoes">
+            <button class="btn-secondary" onclick="editarDiaria('${item.id}')">Editar</button>
+            ${item.status !== "pago" ? `<button class="btn-pay" onclick="marcarPago('${item.id}')">Marcar pago</button>` : ""}
+            <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
+          </div>
         </div>
       `).join("");
     }
 
-    const diarias = lista.filter(item => item.categoria === "diaria");
-    const ads = lista.filter(item => item.categoria === "adiantamento");
+    function renderAdiantamentos(lista) {
+      const ads = lista.filter(item => item.categoria === "adiantamento");
 
-    const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
-    const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
-    const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
-    const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
-
-    els.totalDiarias.textContent = moeda(totalDiarias);
-    els.totalAdiant.textContent = moeda(totalAds);
-    els.totalLiquido.textContent = moeda(totalDiarias - totalAds);
-    els.totalPago.textContent = moeda(totalPago);
-    els.totalPendente.textContent = moeda(totalPendente);
-    els.quantidade.textContent = String(lista.length);
-  }
-
-  function gerarPDF() {
-    const lista = obterFiltrados();
-
-    if (!lista.length) {
-      alert("Não há lançamentos neste mês para gerar PDF.");
-      return;
-    }
-
-    const { jsPDF } = window.jspdf;
-    const docPdf = new jsPDF("p", "mm", "a4");
-
-    const mes = els.filtroMes.value || "geral";
-    const diarias = lista.filter(item => item.categoria === "diaria");
-    const ads = lista.filter(item => item.categoria === "adiantamento");
-
-    const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
-    const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
-    const totalLiquido = totalDiarias - totalAds;
-    const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
-    const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
-
-    const pageWidth = docPdf.internal.pageSize.getWidth();
-    const pageHeight = docPdf.internal.pageSize.getHeight();
-    const margin = 12;
-    const usable = pageWidth - margin * 2;
-    let y = 14;
-
-    function rgb(hex) {
-      const h = hex.replace("#", "");
-      return [
-        parseInt(h.substring(0, 2), 16),
-        parseInt(h.substring(2, 4), 16),
-        parseInt(h.substring(4, 6), 16)
-      ];
-    }
-
-    function needPage(h = 10) {
-      if (y + h > pageHeight - 12) {
-        docPdf.addPage();
-        y = 14;
-        headerTable();
-      }
-    }
-
-    function titleBox() {
-      docPdf.setFillColor(...rgb("1D4ED8"));
-      docPdf.roundedRect(margin, y, usable, 18, 3, 3, "F");
-      docPdf.setTextColor(255, 255, 255);
-      docPdf.setFont("helvetica", "bold");
-      docPdf.setFontSize(18);
-      docPdf.text("Relatório de Diárias", margin + 4, y + 7);
-      docPdf.setFont("helvetica", "normal");
-      docPdf.setFontSize(10);
-      docPdf.text(`Mês: ${mes}`, margin + 4, y + 13);
-      docPdf.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - margin - 4, y + 13, { align: "right" });
-      docPdf.setTextColor(0, 0, 0);
-      y += 24;
-    }
-
-    function resumoLinha(label, value) {
-      needPage(8);
-      docPdf.setDrawColor(220, 220, 220);
-      docPdf.roundedRect(margin, y, usable, 8, 1.5, 1.5);
-      docPdf.setFont("helvetica", "normal");
-      docPdf.setFontSize(10);
-      docPdf.text(label, margin + 3, y + 5.3);
-      docPdf.setFont("helvetica", "bold");
-      docPdf.text(value, pageWidth - margin - 3, y + 5.3, { align: "right" });
-      y += 10;
-    }
-
-    function headerTable() {
-      docPdf.setFillColor(30, 41, 59);
-      docPdf.rect(margin, y, usable, 8, "F");
-      docPdf.setTextColor(255, 255, 255);
-      docPdf.setFont("helvetica", "bold");
-      docPdf.setFontSize(9);
-      docPdf.text("Data", margin + 2, y + 5.3);
-      docPdf.text("Tipo", margin + 24, y + 5.3);
-      docPdf.text("Descrição", margin + 46, y + 5.3);
-      docPdf.text("Valor", margin + 130, y + 5.3);
-      docPdf.text("Status", margin + 160, y + 5.3);
-      docPdf.setTextColor(0, 0, 0);
-      y += 8;
-    }
-
-    function line(item, idx) {
-      const data = dataBR(item.data);
-      const tipo = item.categoria === "diaria"
-        ? (item.tipo === "rua" ? "Rua" : "Depósito")
-        : "Adiant.";
-      const desc = item.desc || "-";
-      const valor = moeda(item.valor);
-      const status = item.categoria === "diaria"
-        ? (item.status === "pago" ? "Pago" : "Pendente")
-        : "-";
-
-      const descLines = docPdf.splitTextToSize(desc, 78);
-      const tipoLines = docPdf.splitTextToSize(tipo, 18);
-      const statusLines = docPdf.splitTextToSize(status, 18);
-      const lines = Math.max(descLines.length, tipoLines.length, statusLines.length, 1);
-      const h = Math.max(8, lines * 4 + 2);
-
-      needPage(h);
-
-      if (idx % 2 === 0) {
-        docPdf.setFillColor(248, 250, 252);
-        docPdf.rect(margin, y, usable, h, "F");
+      if (!ads.length) {
+        els.listaAds.innerHTML = '<div class="empty">Nenhum adiantamento lançado.</div>';
+        return;
       }
 
-      docPdf.setDrawColor(220, 220, 220);
-      docPdf.rect(margin, y, usable, h);
+      els.listaAds.innerHTML = ads.map(item => `
+        <div class="item">
+          <div class="item-topo">
+            <div class="muted">${dataBR(item.data)}</div>
+            <div class="badge adiantamento">Adiantamento</div>
+          </div>
 
-      docPdf.setFont("helvetica", "normal");
-      docPdf.setFontSize(8.5);
-      docPdf.text(data, margin + 2, y + 5);
-      docPdf.text(tipoLines, margin + 24, y + 5);
-      docPdf.text(descLines, margin + 46, y + 5);
-      docPdf.text(valor, margin + 130, y + 5);
-      docPdf.text(statusLines, margin + 160, y + 5);
+          <div class="servico">${item.desc}</div>
+          <div class="valor">${moeda(item.valor)}</div>
 
-      y += h;
+          <div class="acoes">
+            <button class="btn-secondary" onclick="editarAdiantamento('${item.id}')">Editar</button>
+            <button class="btn-del" onclick="excluirItem('${item.id}')">Excluir</button>
+          </div>
+        </div>
+      `).join("");
     }
 
-    titleBox();
-    resumoLinha("Total diárias", moeda(totalDiarias));
-    resumoLinha("Adiantamentos", moeda(totalAds));
-    resumoLinha("Líquido a receber", moeda(totalLiquido));
-    resumoLinha("Total pago", moeda(totalPago));
-    resumoLinha("Total pendente", moeda(totalPendente));
+    function renderResumo(lista) {
+      if (!lista.length) {
+        els.listaResumo.innerHTML = '<div class="empty">Nenhum lançamento neste mês.</div>';
+      } else {
+        els.listaResumo.innerHTML = lista.map(item => `
+          <div class="item">
+            <div class="item-topo">
+              <div class="muted">${dataBR(item.data)}</div>
+              <div class="badge ${item.categoria === "adiantamento" ? "adiantamento" : (item.status === "pago" ? "pago" : "pendente")}">
+                ${item.categoria === "adiantamento" ? "Adiantamento" : (item.status === "pago" ? "Pago" : "Pendente")}
+              </div>
+            </div>
 
-    y += 4;
-    docPdf.setFont("helvetica", "bold");
-    docPdf.setFontSize(12);
-    docPdf.text("Lançamentos do mês", margin, y);
-    y += 6;
+            <div class="servico">${item.desc}</div>
+            <div class="muted">${item.categoria === "diaria" ? `${item.tipo === "rua" ? "Rua" : "Depósito"} • ${item.calc === "dobra" ? "Dobra" : "Normal"}` : "Valor adiantado"}</div>
+            <div class="valor">${moeda(item.valor)}</div>
+          </div>
+        `).join("");
+      }
 
-    headerTable();
-    lista.forEach((item, idx) => line(item, idx));
+      const diarias = lista.filter(item => item.categoria === "diaria");
+      const ads = lista.filter(item => item.categoria === "adiantamento");
 
-    docPdf.save(`relatorio-${mes}.pdf`);
-  }
+      const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
+      const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
+      const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
+      const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
 
-  function render() {
-    const listaFiltrada = obterFiltrados();
-    renderDiarias(dbLocal);
-    renderAdiantamentos(dbLocal);
-    renderResumo(listaFiltrada);
-  }
-
-  els.tabs.forEach(tab => {
-    tab.addEventListener("click", () => trocarTab(tab.dataset.tab));
-  });
-
-  els.tipoDiaria.addEventListener("change", atualizarPreview);
-  els.calcDiaria.addEventListener("change", atualizarPreview);
-  els.btnAddDiaria.addEventListener("click", adicionarDiaria);
-  els.btnAddAd.addEventListener("click", adicionarAdiantamento);
-  els.filtroMes.addEventListener("change", render);
-  els.btnMesAtual.addEventListener("click", () => {
-    els.filtroMes.value = mesAtual();
-    render();
-  });
-  els.btnPDF.addEventListener("click", gerarPDF);
-
-  els.btnCadastrar.addEventListener("click", async () => {
-    limparErro();
-
-    const email = els.loginEmail.value.trim();
-    const senha = els.loginSenha.value.trim();
-
-    if (!email || !senha) {
-      mostrarErro("Preencha e-mail e senha.");
-      return;
+      els.totalDiarias.textContent = moeda(totalDiarias);
+      els.totalAdiant.textContent = moeda(totalAds);
+      els.totalLiquido.textContent = moeda(totalDiarias - totalAds);
+      els.totalPago.textContent = moeda(totalPago);
+      els.totalPendente.textContent = moeda(totalPendente);
+      els.quantidade.textContent = String(lista.length);
     }
 
-    try {
-      await createUserWithEmailAndPassword(auth, email, senha);
-    } catch (e) {
-      mostrarErro("Erro ao criar conta:\n" + (e.message || e.code || e));
+    function gerarPDF() {
+      const lista = obterFiltrados();
+
+      if (!lista.length) {
+        toast("Não há lançamentos neste mês para gerar PDF.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const docPdf = new jsPDF("p", "mm", "a4");
+
+      const mes = els.filtroMes.value || "geral";
+      const diarias = lista.filter(item => item.categoria === "diaria");
+      const ads = lista.filter(item => item.categoria === "adiantamento");
+
+      const totalDiarias = diarias.reduce((s, i) => s + Number(i.valor || 0), 0);
+      const totalAds = ads.reduce((s, i) => s + Number(i.valor || 0), 0);
+      const totalLiquido = totalDiarias - totalAds;
+      const totalPago = diarias.filter(i => i.status === "pago").reduce((s, i) => s + Number(i.valor || 0), 0);
+      const totalPendente = diarias.filter(i => i.status === "pendente").reduce((s, i) => s + Number(i.valor || 0), 0);
+
+      const pageWidth = docPdf.internal.pageSize.getWidth();
+      const pageHeight = docPdf.internal.pageSize.getHeight();
+      const margin = 12;
+      const usable = pageWidth - margin * 2;
+      let y = 14;
+
+      function rgb(hex) {
+        const h = hex.replace("#", "");
+        return [
+          parseInt(h.substring(0, 2), 16),
+          parseInt(h.substring(2, 4), 16),
+          parseInt(h.substring(4, 6), 16)
+        ];
+      }
+
+      function needPage(h = 10) {
+        if (y + h > pageHeight - 12) {
+          docPdf.addPage();
+          y = 14;
+          headerTable();
+        }
+      }
+
+      function titleBox() {
+        docPdf.setFillColor(...rgb("1D4ED8"));
+        docPdf.roundedRect(margin, y, usable, 18, 3, 3, "F");
+        docPdf.setTextColor(255, 255, 255);
+        docPdf.setFont("helvetica", "bold");
+        docPdf.setFontSize(18);
+        docPdf.text("Relatório de Diárias", margin + 4, y + 7);
+        docPdf.setFont("helvetica", "normal");
+        docPdf.setFontSize(10);
+        docPdf.text(`Mês: ${mes}`, margin + 4, y + 13);
+        docPdf.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, pageWidth - margin - 4, y + 13, { align: "right" });
+        docPdf.setTextColor(0, 0, 0);
+        y += 24;
+      }
+
+      function resumoLinha(label, value) {
+        needPage(8);
+        docPdf.setDrawColor(220, 220, 220);
+        docPdf.roundedRect(margin, y, usable, 8, 1.5, 1.5);
+        docPdf.setFont("helvetica", "normal");
+        docPdf.setFontSize(10);
+        docPdf.text(label, margin + 3, y + 5.3);
+        docPdf.setFont("helvetica", "bold");
+        docPdf.text(value, pageWidth - margin - 3, y + 5.3, { align: "right" });
+        y += 10;
+      }
+
+      function headerTable() {
+        docPdf.setFillColor(30, 41, 59);
+        docPdf.rect(margin, y, usable, 8, "F");
+        docPdf.setTextColor(255, 255, 255);
+        docPdf.setFont("helvetica", "bold");
+        docPdf.setFontSize(9);
+        docPdf.text("Data", margin + 2, y + 5.3);
+        docPdf.text("Tipo", margin + 24, y + 5.3);
+        docPdf.text("Descrição", margin + 46, y + 5.3);
+        docPdf.text("Valor", margin + 130, y + 5.3);
+        docPdf.text("Status", margin + 160, y + 5.3);
+        docPdf.setTextColor(0, 0, 0);
+        y += 8;
+      }
+
+      function line(item, idx) {
+        const data = dataBR(item.data);
+        const tipo = item.categoria === "diaria"
+          ? (item.tipo === "rua" ? "Rua" : "Depósito")
+          : "Adiant.";
+        const desc = item.desc || "-";
+        const valor = moeda(item.valor);
+        const status = item.categoria === "diaria"
+          ? (item.status === "pago" ? "Pago" : "Pendente")
+          : "-";
+
+        const descLines = docPdf.splitTextToSize(desc, 78);
+        const tipoLines = docPdf.splitTextToSize(tipo, 18);
+        const statusLines = docPdf.splitTextToSize(status, 18);
+        const lines = Math.max(descLines.length, tipoLines.length, statusLines.length, 1);
+        const h = Math.max(8, lines * 4 + 2);
+
+        needPage(h);
+
+        if (idx % 2 === 0) {
+          docPdf.setFillColor(248, 250, 252);
+          docPdf.rect(margin, y, usable, h, "F");
+        }
+
+        docPdf.setDrawColor(220, 220, 220);
+        docPdf.rect(margin, y, usable, h);
+
+        docPdf.setFont("helvetica", "normal");
+        docPdf.setFontSize(8.5);
+        docPdf.text(data, margin + 2, y + 5);
+        docPdf.text(tipoLines, margin + 24, y + 5);
+        docPdf.text(descLines, margin + 46, y + 5);
+        docPdf.text(valor, margin + 130, y + 5);
+        docPdf.text(statusLines, margin + 160, y + 5);
+
+        y += h;
+      }
+
+      titleBox();
+      resumoLinha("Total diárias", moeda(totalDiarias));
+      resumoLinha("Adiantamentos", moeda(totalAds));
+      resumoLinha("Líquido a receber", moeda(totalLiquido));
+      resumoLinha("Total pago", moeda(totalPago));
+      resumoLinha("Total pendente", moeda(totalPendente));
+
+      y += 4;
+      docPdf.setFont("helvetica", "bold");
+      docPdf.setFontSize(12);
+      docPdf.text("Lançamentos do mês", margin, y);
+      y += 6;
+
+      headerTable();
+      lista.forEach((item, idx) => line(item, idx));
+
+      docPdf.save(`relatorio-${mes}.pdf`);
+      toast("PDF gerado.");
     }
-  });
 
-  els.btnEntrar.addEventListener("click", async () => {
-    limparErro();
-
-    const email = els.loginEmail.value.trim();
-    const senha = els.loginSenha.value.trim();
-
-    if (!email || !senha) {
-      mostrarErro("Preencha e-mail e senha.");
-      return;
+    function render() {
+      const listaFiltrada = obterFiltrados();
+      renderDiarias(dbLocal);
+      renderAdiantamentos(dbLocal);
+      renderResumo(listaFiltrada);
     }
 
-    try {
-      await signInWithEmailAndPassword(auth, email, senha);
-    } catch (e) {
-      mostrarErro("Erro ao entrar:\n" + (e.message || e.code || e));
-    }
-  });
+    els.tabs.forEach(tab => {
+      tab.addEventListener("click", () => trocarTab(tab.dataset.tab));
+    });
 
-  els.btnLogout.addEventListener("click", async () => {
-    await signOut(auth);
-  });
-
-  window.excluirItem = excluirItem;
-  window.marcarPago = marcarPago;
-  window.editarDiaria = editarDiaria;
-  window.editarAdiantamento = editarAdiantamento;
-
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      usuarioAtual = user;
-      els.userInfo.textContent = user.email || "";
-      els.telaLogin.style.display = "none";
-      els.app.style.display = "block";
+    els.tipoDiaria.addEventListener("change", atualizarPreview);
+    els.calcDiaria.addEventListener("change", atualizarPreview);
+    els.btnAddDiaria.addEventListener("click", adicionarDiaria);
+    els.btnAddAd.addEventListener("click", adicionarAdiantamento);
+    els.filtroMes.addEventListener("change", render);
+    els.btnMesAtual.addEventListener("click", () => {
       els.filtroMes.value = mesAtual();
-      atualizarPreview();
-      await carregarLancamentosNuvem();
-    } else {
-      usuarioAtual = null;
-      dbLocal = [];
-      els.userInfo.textContent = "";
-      els.telaLogin.style.display = "flex";
-      els.app.style.display = "none";
+      render();
+    });
+    els.btnPDF.addEventListener("click", gerarPDF);
+
+    els.btnCadastrar.addEventListener("click", async () => {
+      limparErro();
+      const email = els.loginEmail.value.trim();
+      const senha = els.loginSenha.value.trim();
+
+      if (!email || !senha) {
+        mostrarErro("Preencha e-mail e senha.");
+        return;
+      }
+
+      try {
+        await createUserWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        mostrarErro("Erro ao criar conta:\n" + (e.message || e.code || e));
+      }
+    });
+
+    els.btnEntrar.addEventListener("click", async () => {
+      limparErro();
+      const email = els.loginEmail.value.trim();
+      const senha = els.loginSenha.value.trim();
+
+      if (!email || !senha) {
+        mostrarErro("Preencha e-mail e senha.");
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        mostrarErro("Erro ao entrar:\n" + (e.message || e.code || e));
+      }
+    });
+
+    els.btnLogout.addEventListener("click", async () => {
+      await signOut(auth);
+      toast("Você saiu da conta.");
+    });
+
+    els.btnInstall.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      els.btnInstall.style.display = "none";
+    });
+
+    window.excluirItem = excluirItem;
+    window.marcarPago = marcarPago;
+    window.editarDiaria = editarDiaria;
+    window.editarAdiantamento = editarAdiantamento;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      els.btnInstall.style.display = "block";
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        usuarioAtual = user;
+        els.userInfo.textContent = user.email || "";
+        els.telaLogin.classList.add("hidden");
+        els.app.classList.remove("hidden");
+        els.filtroMes.value = mesAtual();
+        atualizarPreview();
+        await carregarLancamentosNuvem();
+      } else {
+        usuarioAtual = null;
+        dbLocal = [];
+        els.userInfo.textContent = "";
+        els.telaLogin.classList.remove("hidden");
+        els.app.classList.add("hidden");
+      }
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
     }
-  });
   </script>
 </body>
 </html>
