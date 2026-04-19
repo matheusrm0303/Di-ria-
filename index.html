@@ -32,6 +32,12 @@
       margin: 8px 0 0;
       color: #cbd5e1;
     }
+    .topo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
     .tabs {
       display: flex;
       gap: 8px;
@@ -144,6 +150,13 @@
       flex: 1;
       min-width: 120px;
     }
+    .btn-logout {
+      background: #334155;
+      color: #fff;
+      padding: 10px 12px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
     .acoes {
       display: flex;
       gap: 8px;
@@ -222,16 +235,69 @@
       gap: 10px;
       margin-top: 10px;
     }
+
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 20px;
+      padding: 22px;
+    }
+    .login-card h2 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+    .login-card p {
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+    .login-msg {
+      margin-top: 12px;
+      color: #fca5a5;
+      font-size: 14px;
+      min-height: 20px;
+    }
+
     @media (max-width: 430px) {
       .grid2, .resumo, .btn-grid { grid-template-columns: 1fr; }
+      .topo-row { align-items: flex-start; flex-direction: column; }
     }
   </style>
 </head>
 <body>
-  <div class="app">
+
+  <div id="telaLogin" class="login-wrap" style="display:none;">
+    <div class="login-card">
+      <h2>🔐 Entrar</h2>
+      <p>Entre com seu e-mail e senha para acessar o app.</p>
+
+      <input id="loginEmail" type="email" placeholder="Seu e-mail" />
+      <input id="loginSenha" type="password" placeholder="Sua senha" style="margin-top:10px;" />
+
+      <button id="btnEntrar" class="btn-primary" style="margin-top:14px;">Entrar</button>
+      <button id="btnCadastrar" class="btn-secondary" style="width:100%; margin-top:10px;">Criar conta</button>
+
+      <div id="loginMsg" class="login-msg"></div>
+    </div>
+  </div>
+
+  <div class="app" id="app" style="display:none;">
     <div class="topo">
-      <h1>💼 Controle Profissional</h1>
-      <p>Rua R$ 200 • Depósito R$ 100</p>
+      <div class="topo-row">
+        <div>
+          <h1>💼 Controle Profissional</h1>
+          <p>Rua R$ 200 • Depósito R$ 100</p>
+        </div>
+        <button class="btn-logout" id="btnLogout">Sair</button>
+      </div>
     </div>
 
     <div class="tabs">
@@ -382,14 +448,44 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",
+      authDomain: "controle-diarias-4627b.firebaseapp.com",
+      projectId: "controle-diarias-4627b",
+      storageBucket: "controle-diarias-4627b.firebasestorage.app",
+      messagingSenderId: "432274053982",
+      appId: "1:432274053982:web:31a14aeb0e4f4517e40dcf"
+    };
+
     const STORAGE_KEY = "controle_profissional_v2";
     let editandoId = null;
     let editandoCategoria = null;
 
+    const appFirebase = initializeApp(firebaseConfig);
+    const auth = getAuth(appFirebase);
+
     const $ = (id) => document.getElementById(id);
 
     const els = {
+      telaLogin: $("telaLogin"),
+      app: $("app"),
+      loginEmail: $("loginEmail"),
+      loginSenha: $("loginSenha"),
+      btnEntrar: $("btnEntrar"),
+      btnCadastrar: $("btnCadastrar"),
+      loginMsg: $("loginMsg"),
+      btnLogout: $("btnLogout"),
+
       tabs: document.querySelectorAll(".tab"),
       sections: document.querySelectorAll(".section"),
 
@@ -421,6 +517,14 @@
       totalPendente: $("totalPendente"),
       quantidade: $("quantidade"),
     };
+
+    function mostrarErro(msg) {
+      els.loginMsg.textContent = msg;
+    }
+
+    function limparErro() {
+      els.loginMsg.textContent = "";
+    }
 
     function carregar() {
       try {
@@ -872,14 +976,63 @@
     });
     els.btnPDF.addEventListener("click", gerarPDF);
 
+    els.btnCadastrar.addEventListener("click", async () => {
+      limparErro();
+
+      const email = els.loginEmail.value.trim();
+      const senha = els.loginSenha.value.trim();
+
+      if (!email || !senha) {
+        mostrarErro("Preencha e-mail e senha.");
+        return;
+      }
+
+      try {
+        await createUserWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        mostrarErro("Erro ao criar conta: " + e.message);
+      }
+    });
+
+    els.btnEntrar.addEventListener("click", async () => {
+      limparErro();
+
+      const email = els.loginEmail.value.trim();
+      const senha = els.loginSenha.value.trim();
+
+      if (!email || !senha) {
+        mostrarErro("Preencha e-mail e senha.");
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, senha);
+      } catch (e) {
+        mostrarErro("Erro ao entrar: " + e.message);
+      }
+    });
+
+    els.btnLogout.addEventListener("click", async () => {
+      await signOut(auth);
+    });
+
     window.excluirItem = excluirItem;
     window.marcarPago = marcarPago;
     window.editarDiaria = editarDiaria;
     window.editarAdiantamento = editarAdiantamento;
 
-    els.filtroMes.value = mesAtual();
-    atualizarPreview();
-    render();
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        els.telaLogin.style.display = "none";
+        els.app.style.display = "block";
+        els.filtroMes.value = mesAtual();
+        atualizarPreview();
+        render();
+      } else {
+        els.telaLogin.style.display = "flex";
+        els.app.style.display = "none";
+      }
+    });
   </script>
 </body>
 </html>
