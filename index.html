@@ -664,6 +664,44 @@
     }
 
     async function adicionarDiaria() {
+  try {
+    const data = els.dataDiaria.value;
+    const desc = els.descDiaria.value.trim();
+
+    if (!data || !desc) {
+      alert("Preencha a data e a descrição.");
+      return;
+    }
+
+    if (!usuarioAtual) {
+      alert("Usuário não está logado.");
+      return;
+    }
+
+    const item = {
+      categoria: "diaria",
+      data,
+      desc,
+      tipo: els.tipoDiaria.value,
+      calc: els.calcDiaria.value,
+      valor: valorDiaria(),
+      status: els.statusDiaria.value
+    };
+
+    if (editandoId && editandoCategoria === "diaria") {
+      await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
+    } else {
+      await addDoc(colecaoLancamentos(), item);
+    }
+
+    alert("Diária salva com sucesso!");
+    limparEdicao();
+    await carregarLancamentosNuvem();
+  } catch (e) {
+    console.error("ERRO AO SALVAR DIÁRIA:", e);
+    alert("Erro ao salvar diária: " + (e.message || e));
+  }
+}
       try {
         const data = els.dataDiaria.value;
         const desc = els.descDiaria.value.trim();
@@ -707,6 +745,42 @@
     }
 
     async function adicionarAdiantamento() {
+  try {
+    const data = els.dataAd.value;
+    const desc = els.descAd.value.trim();
+    const valor = parseFloat(els.valorAd.value || "0");
+
+    if (!data || !desc || !valor) {
+      alert("Preencha data, descrição e valor.");
+      return;
+    }
+
+    if (!usuarioAtual) {
+      alert("Usuário não está logado.");
+      return;
+    }
+
+    const item = {
+      categoria: "adiantamento",
+      data,
+      desc,
+      valor
+    };
+
+    if (editandoId && editandoCategoria === "adiantamento") {
+      await updateDoc(doc(db, "users", usuarioAtual.uid, "lancamentos", editandoId), item);
+    } else {
+      await addDoc(colecaoLancamentos(), item);
+    }
+
+    alert("Adiantamento salvo com sucesso!");
+    limparEdicao();
+    await carregarLancamentosNuvem();
+  } catch (e) {
+    console.error("ERRO AO SALVAR ADIANTAMENTO:", e);
+    alert("Erro ao salvar adiantamento: " + (e.message || e));
+  }
+}
       try {
         const data = els.dataAd.value;
         const desc = els.descAd.value.trim();
