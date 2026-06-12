@@ -337,15 +337,28 @@
       async function carregarDados(uid){
         setCarregando(true);
         try{
+          // Normaliza qualquer formato de data para "YYYY-MM-DD"
+          function normalizarData(val) {
+            if (!val) return "";
+            // Firestore Timestamp
+            if (val && typeof val === "object" && typeof val.toDate === "function") {
+              return val.toDate().toISOString().slice(0, 10);
+            }
+            // Já é string ISO "YYYY-MM-DD" ou "YYYY-MM-DDTHH..."
+            if (typeof val === "string") return val.slice(0, 10);
+            // Number (ms)
+            if (typeof val === "number") return new Date(val).toISOString().slice(0, 10);
+            return "";
+          }
+
           // Diárias
           const qD=fns.query(colDiarias(uid),fns.orderBy("data","desc"));
           const snapD=await fns.getDocs(qD);
           const listD=snapD.docs.map(s=>{
             const d=s.data();
-            // Compatibilidade com formato antigo do primeiro app
             return {
               id: s.id,
-              data: d.data||"",
+              data: normalizarData(d.data),
               evento: d.desc||d.evento||"",
               tipoDiaria: d.tipo||d.tipoDiaria||"rua",
               valorDiaria: d.valor||d.valorDiaria||0,
@@ -362,7 +375,7 @@
           const listMov=snapD.docs.map(s=>{
             const d=s.data();
             if(d.categoria!=="adiantamento") return null;
-            return {id:s.id,tipo:"adiantamento",data:d.data||"",valor:d.valor||0,obs:d.desc||d.obs||""};
+            return {id:s.id,tipo:"adiantamento",data:normalizarData(d.data),valor:d.valor||0,obs:d.desc||d.obs||""};
           }).filter(Boolean);
 
           // Movimentos na nova coleção separada
