@@ -1154,55 +1154,185 @@
         const nst3=s=>String(s||'pendente').toLowerCase().trim();
         const dPagas=diarias.filter(d=>nst3(d.status)==="pago");
         const dPend=diarias.filter(d=>nst3(d.status)==="pendente");
-        const totAlim=diarias.reduce((s,d)=>s+(d.almoco||0)+(d.janta||0),0);
+        const totAlim=diarias.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
         const totPend2=dPend.reduce((s,d)=>s+calcTotal(d),0);
         const totPago2=dPagas.reduce((s,d)=>s+calcTotal(d),0);
+        // Gráfico: % recebido = (totPago2 + totA) / totD
+        const totRecebido=totPago2+totA;
+        const pctRecebido=totD>0?Math.min(100,Math.round((totRecebido/totD)*100)):0;
+        const pctPago=totD>0?Math.min(100,Math.round((totPago2/totD)*100)):0;
+        const pctAdiant=totD>0?Math.min(100,Math.round((totA/totD)*100)):0;
+
+        // WhatsApp
+        function compartilharWhatsApp(){
+          const linhas=[
+            "💼 *FECHAMENTO DE DIÁRIAS*",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            "",
+            "📋 *Resumo Geral*",
+            "• Total em diárias: *"+fm(totD)+"*",
+            dPagas.length>0?"• Diárias pagas ("+dPagas.length+"): *"+fm(totPago2)+"*":"",
+            dPend.length>0?"• Diárias pendentes ("+dPend.length+"): *"+fm(totPend2)+"*":"",
+            totAlim>0?"• Alimentação inclusa: *"+fm(totAlim)+"*":"",
+            "",
+            "💵 *Adiantamentos Recebidos*",
+            movimentos.length>0
+              ? movimentos.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("
+")
+              : "• Nenhum adiantamento",
+            "• Total adiantado: *"+fm(totA)+"*",
+            "",
+            "━━━━━━━━━━━━━━━━━━━━━━",
+            saldo>0
+              ? "💰 *A RECEBER: "+fm(saldo)+"*"
+              : saldo<0
+                ? "✅ *QUITADO* (crédito de "+fm(Math.abs(saldo))+")"
+                : "✅ *QUITADO*",
+            "",
+            dPend.length>0?"⏳ *Diárias pendentes:*":"",
+            dPend.length>0
+              ? dPend.slice().sort((a,b)=>a.data.localeCompare(b.data))
+                  .map(d=>"• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*").join("
+")
+              : "",
+          ].filter(l=>l!=="").join("
+");
+          const url="https://wa.me/?text="+encodeURIComponent(linhas);
+          window.open(url,"_blank");
+        }
+
         return(
           <div style={{paddingBottom:100}} className="fadein">
-            <div style={{margin:"20px 20px 0",borderRadius:20,overflow:"hidden",position:"relative",background:"linear-gradient(145deg,#040D1A,#071E38)",border:"1px solid rgba(34,211,238,.2)"}}>
-              <div style={{padding:"22px 22px 18px",position:"relative"}}>
-                <div style={{fontSize:11,fontWeight:600,color:"rgba(34,211,238,.5)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:8}}>A Receber</div>
-                <div style={{fontSize:36,fontWeight:800,color:saldo>0?"#22D3EE":"#FACC15",letterSpacing:"-.04em",lineHeight:1}}>{fm(saldo)}</div>
-                <div style={{fontSize:12,color:muted,marginTop:6}}>Após descontar {fm(totA)} em adiantamentos</div>
-                <button className="press" onClick={async()=>{setGerandoF(true);try{await exportPDFFechamento(diarias,movimentos);}catch(e){alert("Erro: "+e.message);}finally{setGerandoF(false);}}} disabled={gerandoF}
-                  style={{marginTop:16,width:"100%",background:"linear-gradient(135deg,#064E3B,#047857)",border:"1px solid rgba(34,211,238,.25)",borderRadius:10,color:"#22D3EE",padding:"13px",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:gerandoF?.6:1,boxShadow:"0 4px 16px rgba(34,211,238,.15)"}}>
-                  {gerandoF?"⏳ Gerando PDF…":"📄 Exportar Fechamento em PDF"}
-                </button>
-              </div>
-            </div>
 
-            <div style={{padding:"14px 20px 0"}}>
-              <div style={{fontSize:11,fontWeight:700,color:muted,textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>Resumo Geral</div>
-              <div style={{...card,overflow:"hidden"}}>
-                {[
-                  {l:"Total em Diárias",v:fm(totD),c:txt,icon:"📋"},
-                  {l:"Alimentação inclusa",v:fm(totAlim),c:acent2,icon:"🍽"},
-                  {l:"Adiantamentos recebidos",v:fm(totA),c:"#38BDF8",icon:"💵"},
-                  {l:"Diárias já pagas ("+dPagas.length+")",v:fm(totPago2),c:"#22D3EE",icon:"✅"},
-                  {l:"Diárias pendentes ("+dPend.length+")",v:fm(totPend2),c:"#FACC15",icon:"⏳"},
-                ].map(({l,v,c,icon},i,arr)=>(
-                  <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 16px",borderBottom:i<arr.length-1?"1px solid rgba(14,165,233,.07)":"none"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <span style={{fontSize:15}}>{icon}</span>
-                      <span style={{fontSize:13,color:muted,fontWeight:500}}>{l}</span>
+            {/* Hero card */}
+            <div style={{margin:"20px 20px 0",borderRadius:20,overflow:"hidden",position:"relative",background:"linear-gradient(145deg,#040D1A,#071E38)",border:"1px solid rgba(34,211,238,.2)"}}>
+              <div style={{padding:"22px 22px 20px",position:"relative"}}>
+                <div style={{fontSize:11,fontWeight:600,color:"rgba(34,211,238,.5)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:8}}>
+                  {saldo>0?"A Receber":saldo<0?"Crédito":"Quitado"}
+                </div>
+                <div style={{fontSize:36,fontWeight:800,color:saldo>0?"#22D3EE":saldo<0?"#F87171":"#4ADE80",letterSpacing:"-.04em",lineHeight:1}}>
+                  {saldo<0?"+ "+fm(Math.abs(saldo)):fm(saldo)}
+                </div>
+                <div style={{fontSize:12,color:muted,marginTop:6}}>{diarias.length} diárias · {fm(totA)} adiantado · total {fm(totD)}</div>
+
+                {/* Barra de progresso */}
+                <div style={{marginTop:18}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                    <span style={{fontSize:11,color:muted,fontWeight:600}}>Progresso de recebimento</span>
+                    <span style={{fontSize:11,fontWeight:700,color:pctRecebido>=100?"#4ADE80":"#38BDF8"}}>{pctRecebido}%</span>
+                  </div>
+                  {/* Track */}
+                  <div style={{height:10,borderRadius:99,background:"rgba(14,165,233,.1)",overflow:"hidden",position:"relative"}}>
+                    {/* Adiantamentos (azul) */}
+                    <div style={{position:"absolute",left:0,top:0,height:"100%",width:pctAdiant+"%",background:"linear-gradient(90deg,#0EA5E9,#38BDF8)",borderRadius:99,transition:"width .6s ease"}}/>
+                    {/* Pagas (verde) — começa depois dos adiantamentos */}
+                    <div style={{position:"absolute",left:pctAdiant+"%",top:0,height:"100%",width:pctPago+"%",background:"linear-gradient(90deg,#22C55E,#4ADE80)",borderRadius:99,transition:"width .6s ease"}}/>
+                  </div>
+                  {/* Legenda */}
+                  <div style={{display:"flex",gap:14,marginTop:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:8,height:8,borderRadius:"50%",background:"#38BDF8"}}/>
+                      <span style={{fontSize:10,color:muted}}>Adiantado {fm(totA)}</span>
                     </div>
-                    <span style={{fontSize:13,fontWeight:700,color:c}}>{v}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:8,height:8,borderRadius:"50%",background:"#4ADE80"}}/>
+                      <span style={{fontSize:10,color:muted}}>Pago {fm(totPago2)}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <div style={{width:8,height:8,borderRadius:"50%",background:"rgba(14,165,233,.15)"}}/>
+                      <span style={{fontSize:10,color:muted}}>Pendente {fm(totPend2)}</span>
+                    </div>
                   </div>
-                ))}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",background:"rgba(34,211,238,.06)",borderTop:"1px solid rgba(34,211,238,.12)"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:15}}>💰</span>
-                    <span style={{fontSize:14,fontWeight:700,color:txt}}>Saldo a Receber</span>
-                  </div>
-                  <span style={{fontSize:17,fontWeight:800,color:saldo>0?"#22D3EE":saldo<0?"#F87171":"#22D3EE"}}>{saldo<0?"- "+fm(Math.abs(saldo)):fm(saldo)}</span>
+                </div>
+
+                {/* Botões */}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}}>
+                  <button className="press" onClick={compartilharWhatsApp}
+                    style={{background:"linear-gradient(135deg,#15803D,#16A34A)",border:"1px solid rgba(74,222,128,.25)",borderRadius:10,color:"#4ADE80",padding:"13px",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:"0 4px 16px rgba(74,222,128,.15)"}}>
+                    <span style={{fontSize:16}}>💬</span> WhatsApp
+                  </button>
+                  <button className="press" onClick={async()=>{setGerandoF(true);try{await exportPDFFechamento(diarias,movimentos);}catch(e){alert("Erro: "+e.message);}finally{setGerandoF(false);}}} disabled={gerandoF}
+                    style={{background:"linear-gradient(135deg,#064E3B,#047857)",border:"1px solid rgba(34,211,238,.25)",borderRadius:10,color:"#22D3EE",padding:"13px",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:gerandoF?.6:1,boxShadow:"0 4px 16px rgba(34,211,238,.15)"}}>
+                    <span style={{fontSize:16}}>📄</span> {gerandoF?"Gerando…":"PDF"}
+                  </button>
                 </div>
               </div>
             </div>
 
+            {/* Cards de stats */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"14px 20px 0"}}>
+              {[
+                {icon:"📋",label:"Total",valor:fm(totD),cor:txt},
+                {icon:"⏳",label:"Pendente",valor:fm(totPend2),cor:"#FACC15"},
+                {icon:"✅",label:"Pagas",valor:fm(totPago2),cor:"#4ADE80"},
+                {icon:"💵",label:"Adiantado",valor:fm(totA),cor:"#38BDF8"},
+              ].map(({icon,label,valor,cor})=>(
+                <div key={label} style={{...card,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{width:36,height:36,background:"rgba(14,165,233,.07)",border:"1px solid rgba(14,165,233,.1)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{icon}</div>
+                  <div>
+                    <div style={{fontSize:10,color:muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"1px"}}>{label}</div>
+                    <div style={{fontSize:15,fontWeight:800,color:cor,marginTop:2}}>{valor}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Gráfico de rosca CSS */}
+            {totD>0&&(
+              <div style={{padding:"14px 20px 0"}}>
+                <div style={{...card,padding:18}}>
+                  <div style={{fontSize:11,fontWeight:700,color:muted,textTransform:"uppercase",letterSpacing:"1px",marginBottom:16}}>Distribuição</div>
+                  <div style={{display:"flex",alignItems:"center",gap:20}}>
+                    {/* Rosca */}
+                    <div style={{position:"relative",width:90,height:90,flexShrink:0}}>
+                      <svg viewBox="0 0 36 36" style={{width:90,height:90,transform:"rotate(-90deg)"}}>
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(14,165,233,.1)" strokeWidth="3"/>
+                        {/* Pendente (amarelo) — base */}
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#FACC15" strokeWidth="3"
+                          strokeDasharray={totPend2/totD*100+" "+(100-totPend2/totD*100)}
+                          strokeDashoffset="0"/>
+                        {/* Adiantado (azul) */}
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#38BDF8" strokeWidth="3"
+                          strokeDasharray={totA/totD*100+" "+(100-totA/totD*100)}
+                          strokeDashoffset={-(totPend2/totD*100)}/>
+                        {/* Pago (verde) */}
+                        <circle cx="18" cy="18" r="15.9" fill="none" stroke="#4ADE80" strokeWidth="3"
+                          strokeDasharray={totPago2/totD*100+" "+(100-totPago2/totD*100)}
+                          strokeDashoffset={-((totPend2+totA)/totD*100)}/>
+                      </svg>
+                      <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                        <div style={{fontSize:16,fontWeight:800,color:pctRecebido>=100?"#4ADE80":"#38BDF8"}}>{pctRecebido}%</div>
+                        <div style={{fontSize:8,color:muted,marginTop:1}}>recebido</div>
+                      </div>
+                    </div>
+                    {/* Barras de detalhe */}
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
+                      {[
+                        {label:"Pendente",valor:totPend2,total:totD,cor:"#FACC15"},
+                        {label:"Adiantado",valor:totA,total:totD,cor:"#38BDF8"},
+                        {label:"Pago",valor:totPago2,total:totD,cor:"#4ADE80"},
+                      ].map(({label,valor,total,cor})=>(
+                        <div key={label}>
+                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                            <span style={{fontSize:10,color:muted,fontWeight:600}}>{label}</span>
+                            <span style={{fontSize:10,fontWeight:700,color:cor}}>{total>0?Math.round(valor/total*100):0}%</span>
+                          </div>
+                          <div style={{height:5,borderRadius:99,background:"rgba(14,165,233,.08)"}}>
+                            <div style={{height:"100%",borderRadius:99,width:(total>0?Math.min(100,valor/total*100):0)+"%",background:cor,transition:"width .6s ease"}}/>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Diárias pendentes */}
             {dPend.length>0&&(
-              <div style={{padding:"16px 20px 0"}}>
+              <div style={{padding:"14px 20px 0"}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#FACC15",textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>⏳ Diárias Pendentes</div>
-                {dPend.slice().sort((a,b)=>b.data.localeCompare(a.data)).map(d=>{
+                {dPend.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
                   const ti=TIPOS.find(t=>t.tipo===d.tipoDiaria);
                   return(
                     <div key={d.id} style={{...card,marginBottom:8,padding:"13px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1219,8 +1349,9 @@
               </div>
             )}
 
+            {/* Adiantamentos */}
             {totA>0&&(
-              <div style={{padding:"16px 20px 0"}}>
+              <div style={{padding:"14px 20px 0"}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#38BDF8",textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>💵 Adiantamentos Recebidos</div>
                 {[...movimentos].sort((a,b)=>b.data.localeCompare(a.data)).map(m=>(
                   <div key={m.id} style={{...card,marginBottom:8,padding:"13px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
