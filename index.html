@@ -783,17 +783,24 @@ function App(){
     const togOpt=k=>setWaOpts(o=>({...o,[k]:!o[k]}));
     function enviarWA(){
       const o=waOpts;
+      const totAlim=diarias.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
+      // detalhe de cada pendente com alimentação
+      const detPend=dPend.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
+        const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
+        return "• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*"+(alim>0?" (incl. "+fm(alim)+" alim.)":"");
+      }).join("\n");
       const linhas=[
         "💼 *FECHAMENTO DE DIÁRIAS*","━━━━━━━━━━━━━━━━━━━━━━","",
         "📋 *Resumo*",
         o.total?"• Total em diárias: *"+fm(totD)+"*":"",
+        o.total&&totAlim>0?"  ↳ Alimentação inclusa: *"+fm(totAlim)+"*":"",
         o.pagas&&dPagas.length>0?"• Diárias pagas ("+dPagas.length+"): *"+fm(totPago)+"*":"",
         o.pendentes&&dPend.length>0?"• Diárias pendentes ("+dPend.length+"): *"+fm(totPend)+"*":"",
         o.adiantamentos&&movimentos.length>0?"\n💵 *Adiantamentos*\n"+(o.listaAdiantamentos?movimentos.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("\n")+"\n":"")+"• Total adiantado: *"+fm(totA)+"*":"",
         "",
         "━━━━━━━━━━━━━━━━━━━━━━",
         saldo>0?"💰 *A RECEBER: "+fm(saldo)+"*":saldo<0?"✅ *QUITADO* (crédito de "+fm(Math.abs(saldo))+")":"✅ *QUITADO*",
-        o.listaPendentes&&dPend.length>0?"\n⏳ *Detalhes pendentes:*\n"+dPend.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>"• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*").join("\n"):"",
+        o.listaPendentes&&dPend.length>0?"\n⏳ *Detalhes pendentes:*\n"+detPend:"",
       ].filter(l=>l!=="").join("\n");
       window.open("https://wa.me/?text="+encodeURIComponent(linhas),"_blank");
       setWaModal(false);
