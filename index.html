@@ -213,9 +213,9 @@
         y+=12;
       };
 
-      const dPend  = diarias.filter(d=>d.status==="pendente");
-      const dPagas = diarias.filter(d=>d.status==="pago");
-      const totD   = diarias.filter(d=>d.status!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
+      const nst=s=>String(s||"pendente").toLowerCase().trim();const dPend=diarias.filter(d=>nst(d.status)==="pendente");
+      const dPagas=diarias.filter(d=>nst(d.status)==="pago");
+      const totD=diarias.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
       const totA   = movimentos.filter(m=>m.tipo==="adiantamento").reduce((s,m)=>s+num(m.valor),0);
       const totPend= dPend.reduce((s,d)=>s+calcTotal(d),0);
       const totPago= dPagas.reduce((s,d)=>s+calcTotal(d),0);
@@ -457,6 +457,7 @@
       const [importando,setImportando]= useState(false);
       const [toast,     setToast]     = useState(null);
       const [confirmId, setConfirmId] = useState(null);
+      const [drawer,    setDrawer]    = useState(false);
 
       const [form, setForm] = useState({data:hoje(),evento:"",tipoDiaria:"",valorDiaria:"",dobra:false,almoco:"",janta:"",obs:""});
       const [mForm,setMForm]= useState({valor:"",data:hoje(),obs:""});
@@ -517,6 +518,7 @@
             snapM.docs.forEach(s=>listMov.push({id:s.id,...s.data()}));
           }catch(e){ /* coleção pode não existir ainda */ }
 
+          console.log('DIÁRIAS CARREGADAS:', listD.map(d=>({id:d.id,status:d.status,evento:d.evento,data:d.data})));
           setDiarias(listD);
           setMovimentos(listMov);
         }finally{
@@ -664,14 +666,15 @@
       }
 
       // ── Cálculos ──────────────────────────────────────────────────────
-      const totD=diarias.filter(d=>d.status!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
-      const totP=diarias.filter(d=>d.status==="pendente").reduce((s,d)=>s+calcTotal(d),0);
+      const nst2=s=>String(s||'pendente').toLowerCase().trim();
+      const totD=diarias.filter(d=>nst2(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
+      const totP=diarias.filter(d=>nst2(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0);
       const totA=movimentos.filter(m=>m.tipo==="adiantamento").reduce((s,m)=>s+num(m.valor),0);
       const saldo=Math.max(0,totP-totA);
 
       const dFilt=diarias.filter(d=>{
         if(filtroMes&&d.data?.slice(0,7)!==filtroMes)return false;
-        if(filtroSt&&d.status!==filtroSt)return false;
+        if(filtroSt&&nst2(d.status)!==filtroSt)return false;
         if(busca&&!(d.evento||"").toLowerCase().includes(busca.toLowerCase()))return false;
         return true;
       }).sort((a,b)=>b.data.localeCompare(a.data));
@@ -1080,8 +1083,9 @@
 
       // ── ABA FECHAMENTO ─────────────────────────────────────────────────
       const renderFechamento=()=>{
-        const dPagas=diarias.filter(d=>d.status==="pago");
-        const dPend=diarias.filter(d=>d.status==="pendente");
+        const nst3=s=>String(s||'pendente').toLowerCase().trim();
+        const dPagas=diarias.filter(d=>nst3(d.status)==="pago");
+        const dPend=diarias.filter(d=>nst3(d.status)==="pendente");
         const totAlim=diarias.reduce((s,d)=>s+(d.almoco||0)+(d.janta||0),0);
         const totPend2=dPend.reduce((s,d)=>s+calcTotal(d),0);
         const totPago2=dPagas.reduce((s,d)=>s+calcTotal(d),0);
@@ -1170,18 +1174,98 @@
         <div style={{minHeight:"100vh",background:"#040D1A",color:txt,maxWidth:520,margin:"0 auto"}}>
           {/* Header */}
           <div style={HDR}>
-            <div>
-              <div style={{fontSize:20,fontWeight:800,color:txt,letterSpacing:"-.04em"}}>
-                {aba==="diarias"?"Diárias":aba==="adiantamento"?"Adiantamento":"Fechamento"}
-              </div>
-              <div style={{fontSize:11,color:muted,marginTop:2,fontWeight:500}}>
-                {usuario?.email||""}
+            <div style={{display:"flex",alignItems:"center",gap:12}}>
+              <button className="press" onClick={()=>setDrawer(true)}
+                style={{width:40,height:40,background:"rgba(14,165,233,.07)",border:"1px solid rgba(14,165,233,.15)",borderRadius:11,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,cursor:"pointer",flexShrink:0}}>
+                <div style={{width:18,height:2,background:"#38BDF8",borderRadius:2}}/>
+                <div style={{width:14,height:2,background:"#38BDF8",borderRadius:2}}/>
+                <div style={{width:18,height:2,background:"#38BDF8",borderRadius:2}}/>
+              </button>
+              <div>
+                <div style={{fontSize:18,fontWeight:800,color:txt,letterSpacing:"-.04em"}}>
+                  {aba==="diarias"?"Diárias":aba==="adiantamento"?"Adiantamento":"Fechamento"}
+                </div>
+                <div style={{fontSize:11,color:muted,marginTop:1,fontWeight:500}}>
+                  {aba==="diarias"?"Dias trabalhados":aba==="adiantamento"?"Recebimentos parciais":"Resumo completo"}
+                </div>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <button className="press" style={{background:"transparent",border:"1px solid rgba(14,165,233,.12)",borderRadius:10,padding:"9px 12px",fontSize:17,color:muted}} onClick={()=>setTela("pdf")}>📄</button>
-              <button className="press" style={{background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.2)",borderRadius:10,padding:"9px 12px",fontSize:17,color:"#38BDF8"}} onClick={()=>setTela("importar")}>📥</button>
-              <button className="press" style={{background:"rgba(248,113,113,.07)",border:"1px solid rgba(248,113,113,.15)",borderRadius:10,padding:"9px 12px",fontSize:12,color:"#F87171",fontWeight:600}} onClick={()=>fns.signOut(auth)}>Sair</button>
+            {aba==="diarias"&&(
+              <button className="press" onClick={()=>abrirForm()}
+                style={{background:"linear-gradient(135deg,#0EA5E9,#0284C7)",border:"none",borderRadius:11,color:"#fff",fontWeight:700,fontSize:13,padding:"10px 16px",boxShadow:"0 4px 16px rgba(14,165,233,.35)"}}>
+                + Nova
+              </button>
+            )}
+          </div>
+
+          {/* Drawer overlay */}
+          {drawer&&(
+            <div onClick={()=>setDrawer(false)}
+              style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:40,backdropFilter:"blur(4px)"}}/>
+          )}
+
+          {/* Drawer lateral */}
+          <div style={{position:"fixed",top:0,left:0,height:"100%",width:280,background:"#040D1A",borderRight:"1px solid rgba(14,165,233,.12)",zIndex:50,transform:drawer?"translateX(0)":"translateX(-100%)",transition:"transform .28s cubic-bezier(.4,0,.2,1)",display:"flex",flexDirection:"column",paddingTop:"env(safe-area-inset-top)"}}>
+            {/* Drawer header */}
+            <div style={{padding:"22px 20px 16px",borderBottom:"1px solid rgba(14,165,233,.08)"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+                <div style={{width:40,height:40,background:"linear-gradient(135deg,#0EA5E9,#0284C7)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>💼</div>
+                <div>
+                  <div style={{fontSize:15,fontWeight:800,color:txt,letterSpacing:"-.03em"}}>Controle</div>
+                  <div style={{fontSize:11,color:muted,marginTop:1}}>{usuario?.email||""}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Itens do menu */}
+            <div style={{flex:1,padding:"12px 12px",display:"flex",flexDirection:"column",gap:4}}>
+              {[
+                {id:"diarias",    icon:"📋", label:"Diárias",      sub:"Dias trabalhados"},
+                {id:"adiantamento",icon:"💵",label:"Adiantamento",  sub:"Recebimentos parciais"},
+                {id:"fechamento", icon:"🔒", label:"Fechamento",    sub:"Resumo completo"},
+              ].map(t=>{
+                const on=aba===t.id;
+                return(
+                  <button key={t.id} className="press" onClick={()=>{setAba(t.id);setDrawer(false);}}
+                    style={{display:"flex",alignItems:"center",gap:14,padding:"13px 14px",borderRadius:14,border:"none",cursor:"pointer",background:on?"rgba(14,165,233,.12)":"transparent",textAlign:"left",width:"100%"}}>
+                    <div style={{width:38,height:38,background:on?"rgba(14,165,233,.2)":"rgba(14,165,233,.06)",border:"1px solid "+(on?"rgba(14,165,233,.35)":"rgba(14,165,233,.1)"),borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>{t.icon}</div>
+                    <div>
+                      <div style={{fontSize:14,fontWeight:on?700:500,color:on?txt:muted}}>{t.label}</div>
+                      <div style={{fontSize:11,color:on?"rgba(56,189,248,.6)":muted,marginTop:1,opacity:.7}}>{t.sub}</div>
+                    </div>
+                    {on&&<div style={{marginLeft:"auto",width:6,height:6,borderRadius:"50%",background:"#38BDF8",flexShrink:0}}/>}
+                  </button>
+                );
+              })}
+
+              <div style={{height:1,background:"rgba(14,165,233,.08)",margin:"8px 0"}}/>
+
+              <button className="press" onClick={()=>{setTela("pdf");setDrawer(false);}}
+                style={{display:"flex",alignItems:"center",gap:14,padding:"13px 14px",borderRadius:14,border:"none",cursor:"pointer",background:"transparent",textAlign:"left",width:"100%"}}>
+                <div style={{width:38,height:38,background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.1)",borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>📊</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:500,color:muted}}>Exportar PDF</div>
+                  <div style={{fontSize:11,color:muted,marginTop:1,opacity:.7}}>Relatório de diárias</div>
+                </div>
+              </button>
+
+              <button className="press" onClick={()=>{setTela("importar");setDrawer(false);}}
+                style={{display:"flex",alignItems:"center",gap:14,padding:"13px 14px",borderRadius:14,border:"none",cursor:"pointer",background:"transparent",textAlign:"left",width:"100%"}}>
+                <div style={{width:38,height:38,background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.1)",borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>📥</div>
+                <div>
+                  <div style={{fontSize:14,fontWeight:500,color:muted}}>Importar PDF</div>
+                  <div style={{fontSize:11,color:muted,marginTop:1,opacity:.7}}>Extrair diárias com IA</div>
+                </div>
+              </button>
+            </div>
+
+            {/* Sair */}
+            <div style={{padding:"16px 12px",borderTop:"1px solid rgba(14,165,233,.08)",paddingBottom:"calc(16px + env(safe-area-inset-bottom))"}}>
+              <button className="press" onClick={()=>{fns.signOut(auth);setDrawer(false);}}
+                style={{display:"flex",alignItems:"center",gap:14,padding:"13px 14px",borderRadius:14,border:"none",cursor:"pointer",background:"rgba(248,113,113,.06)",textAlign:"left",width:"100%"}}>
+                <div style={{width:38,height:38,background:"rgba(248,113,113,.08)",border:"1px solid rgba(248,113,113,.12)",borderRadius:11,display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,flexShrink:0}}>🚪</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#F87171"}}>Sair da conta</div>
+              </button>
             </div>
           </div>
 
@@ -1190,32 +1274,17 @@
           {aba==="adiantamento" && renderAdiant()}
           {aba==="fechamento"   && renderFechamento()}
 
-          {/* Bottom nav */}
-          <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,background:"rgba(4,13,26,.97)",borderTop:"1px solid rgba(14,165,233,.1)",display:"flex",zIndex:20,backdropFilter:"blur(20px)",paddingBottom:"env(safe-area-inset-bottom)"}}>
-            {[{id:"diarias",icon:"📋",label:"Diárias"},{id:"adiantamento",icon:"💵",label:"Adiantamento"},{id:"fechamento",icon:"🔒",label:"Fechamento"}].map(t=>{
-              const on=aba===t.id;
-              return(
-                <button key={t.id} className="press" onClick={()=>setAba(t.id)}
-                  style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"11px 4px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:4,position:"relative"}}>
-                  {on&&<div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:20,height:2,background:"#38BDF8",borderRadius:"0 0 3px 3px"}}/>}
-                  <div style={{fontSize:18,filter:on?"none":"grayscale(100%) opacity(.28)"}}>{t.icon}</div>
-                  <div style={{fontSize:10,fontWeight:on?700:500,color:on?acent2:muted}}>{t.label}</div>
-                </button>
-              );
-            })}
-          </div>
-
           {/* FAB */}
           {aba==="diarias"&&(
             <button className="press" onClick={()=>abrirForm()}
-              style={{position:"fixed",bottom:80,right:"max(20px, calc(50vw - 240px))",zIndex:30,width:58,height:58,borderRadius:"50%",border:"none",cursor:"pointer",background:"linear-gradient(135deg,#0EA5E9,#0284C7)",boxShadow:"0 6px 28px rgba(14,165,233,.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#fff",fontWeight:700}}>
+              style={{position:"fixed",bottom:24,right:"max(20px, calc(50vw - 240px))",zIndex:30,width:58,height:58,borderRadius:"50%",border:"none",cursor:"pointer",background:"linear-gradient(135deg,#0EA5E9,#0284C7)",boxShadow:"0 6px 28px rgba(14,165,233,.55)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#fff",fontWeight:700}}>
               +
             </button>
           )}
 
           {/* Toast */}
           {toast&&(
-            <div style={{position:"fixed",bottom:86,left:"50%",transform:"translateX(-50%)",background:"#071628",border:"1px solid "+toast.cor+"30",color:toast.cor,padding:"10px 20px",borderRadius:50,fontSize:13,fontWeight:600,boxShadow:"0 8px 32px rgba(0,0,0,.6)",zIndex:100,whiteSpace:"nowrap",backdropFilter:"blur(12px)"}}>
+            <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#071628",border:"1px solid "+toast.cor+"30",color:toast.cor,padding:"10px 20px",borderRadius:50,fontSize:13,fontWeight:600,boxShadow:"0 8px 32px rgba(0,0,0,.6)",zIndex:100,whiteSpace:"nowrap",backdropFilter:"blur(12px)"}}>
               {toast.msg}
             </div>
           )}
