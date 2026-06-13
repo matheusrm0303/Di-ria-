@@ -69,35 +69,7 @@
     };
   </script>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
-
-    // ── constantes ────────────────────────────────────────────────────────
-    const MESES      = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-    const MESES_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-
-    const TIPOS = [
-      { tipo:"rua",          label:"Diária de Rua",      emoji:"🚶", valor:200 },
-      { tipo:"deposito",     label:"Diária de Depósito", emoji:"🏭", valor:100 },
-      { tipo:"personalizada",label:"Personalizada",      emoji:"💠", valor:0   },
-    ];
-
-    const SC = {
-      pendente:  { label:"Pendente",  cor:"#FACC15", bg:"rgba(250,204,21,.1)"  },
-      pago:      { label:"Pago",      cor:"#22D3EE", bg:"rgba(34,211,238,.1)"  },
-      cancelado: { label:"Cancelado", cor:"#F87171", bg:"rgba(248,113,113,.1)" },
-    };
-
-    // ── utilitários ───────────────────────────────────────────────────────
-    function fm(v)  { return (v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
-    function fd(iso){ if(!iso)return""; const[y,m,d]=iso.split("-"); return`${d}/${m}/${y}`; }
-    function hoje() { return new Date().toISOString().slice(0,10); }
-    function num(v) {
-      if(typeof v==="number") return v||0;
-      return Number(String(v||"0").replace(/[R$\s.]/g,"").replace(",","."))||0;
-    }
-    function calcTotal(d) { return num(d.valorDiaria)+num(d.almoco)+num(d.janta); }
-
+  <script>
     // ── PDF ───────────────────────────────────────────────────────────────
     function loadJsPDF(){
       return new Promise(res=>{
@@ -392,8 +364,40 @@
       const hoje2=new Date().toLocaleDateString("pt-BR").split("/").join("-");
       abrirBlob(doc,"fechamento_"+hoje2+".pdf");
     }
+  </script>
 
-    // ── Importar PDF com IA ───────────────────────────────────────────────
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ── constantes ────────────────────────────────────────────────────────
+    const MESES      = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    const MESES_FULL = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+
+    const TIPOS = [
+      { tipo:"rua",          label:"Diária de Rua",      emoji:"🚶", valor:200 },
+      { tipo:"deposito",     label:"Diária de Depósito", emoji:"🏭", valor:100 },
+      { tipo:"personalizada",label:"Personalizada",      emoji:"💠", valor:0   },
+    ];
+
+    const SC = {
+      pendente:  { label:"Pendente",  cor:"#FACC15", bg:"rgba(250,204,21,.1)"  },
+      pago:      { label:"Pago",      cor:"#22D3EE", bg:"rgba(34,211,238,.1)"  },
+      cancelado: { label:"Cancelado", cor:"#F87171", bg:"rgba(248,113,113,.1)" },
+    };
+
+    // ── utilitários ───────────────────────────────────────────────────────
+    function fm(v)  { return (v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
+    function fd(iso){ if(!iso)return""; const[y,m,d]=iso.split("-"); return`${d}/${m}/${y}`; }
+    function hoje() { return new Date().toISOString().slice(0,10); }
+    function num(v) {
+      if(typeof v==="number") return v||0;
+      return Number(String(v||"0").replace(/[R$\s.]/g,"").replace(",","."))||0;
+    }
+    function calcTotal(d) { return num(d.valorDiaria)+num(d.almoco)+num(d.janta); }
+
+    // PDF functions movidas para script externo
+
+        // ── Importar PDF com IA ───────────────────────────────────────────────
     async function lerPDFcomIA(file,setLog){
       setLog("📖 Lendo o arquivo PDF...");
       const base64=await new Promise((res,rej)=>{
@@ -424,7 +428,61 @@
     }
 
     // ── App principal ─────────────────────────────────────────────────────
-    function App(){
+    function CalendarioMulti({calMes,setCalMes,diasSel,setDiasSel,setForm,txt,acent2,muted}){
+      const [calAno, calMesNum] = calMes.split("-").map(Number);
+      const primeiroDia = new Date(calAno, calMesNum-1, 1).getDay();
+      const diasNoMes   = new Date(calAno, calMesNum, 0).getDate();
+      const cells = [];
+      for(let i=0;i<primeiroDia;i++) cells.push(null);
+      for(let d=1;d<=diasNoMes;d++) cells.push(d);
+      const pad = n=>String(n).padStart(2,"0");
+      const isoD = d=>calAno+"-"+pad(calMesNum)+"-"+pad(d);
+      const isSel = d=>diasSel.includes(isoD(d));
+      const hojeStr = new Date().toISOString().slice(0,10);
+      const toggleDia = d=>{
+        const iso=isoD(d);
+        setDiasSel(prev=>prev.includes(iso)?prev.filter(x=>x!==iso):[...prev,iso].sort());
+        setForm(f=>({...f,data:iso}));
+      };
+      const prevMes=()=>{const d=new Date(calAno,calMesNum-2,1);setCalMes(d.getFullYear()+"-"+pad(d.getMonth()+1));};
+      const nextMes=()=>{const d=new Date(calAno,calMesNum,1);setCalMes(d.getFullYear()+"-"+pad(d.getMonth()+1));};
+      const MESES_N=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      return(
+        <div style={{marginBottom:14}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <button type="button" className="press" onClick={prevMes} style={{background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.15)",borderRadius:8,color:acent2,width:32,height:32,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{"‹"}</button>
+            <div style={{fontSize:14,fontWeight:700,color:txt}}>{MESES_N[calMesNum-1]} {calAno}</div>
+            <button type="button" className="press" onClick={nextMes} style={{background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.15)",borderRadius:8,color:acent2,width:32,height:32,fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{"›"}</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:6}}>
+            {["D","S","T","Q","Q","S","S"].map((d,i)=>(
+              <div key={i} style={{textAlign:"center",fontSize:10,fontWeight:700,color:muted,padding:"2px 0"}}>{d}</div>
+            ))}
+            {cells.map((d,i)=>(
+              <div key={i}>
+                {d
+                  ? <button type="button" className="press" onClick={()=>toggleDia(d)}
+                      style={{width:"100%",aspectRatio:"1",borderRadius:8,border:isoD(d)===hojeStr&&!isSel(d)?"1.5px solid rgba(14,165,233,.5)":"none",cursor:"pointer",
+                        background:isSel(d)?"linear-gradient(135deg,#0EA5E9,#0284C7)":"rgba(14,165,233,.06)",
+                        color:isSel(d)?"#fff":txt,fontWeight:isSel(d)?700:400,fontSize:13,
+                        boxShadow:isSel(d)?"0 2px 8px rgba(14,165,233,.4)":"none"}}>
+                      {d}
+                    </button>
+                  : <div/>}
+              </div>
+            ))}
+          </div>
+          {diasSel.length>0&&(
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.2)",borderRadius:10}}>
+              <span style={{fontSize:12,color:acent2,fontWeight:600}}>{"📅 "+diasSel.length+" dia"+(diasSel.length>1?"s":"")+" selecionado"+(diasSel.length>1?"s":"")}</span>
+              <button type="button" onClick={()=>setDiasSel([])} style={{background:"none",border:"none",color:"#F87171",fontSize:12,fontWeight:600,cursor:"pointer"}}>Limpar</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+        function App(){
       // Firebase refs via window (bridge entre módulo e babel)
       const auth  = window.__firebaseAuth;
       const db    = window.__firebaseDb;
@@ -834,56 +892,11 @@
           <div style={{padding:"24px 20px 120px",display:"flex",flexDirection:"column",gap:14}} className="fadein">
             <div style={{...card,padding:18}}>
               {/* Calendário multi-seleção */}
-              {!editId&&(()=>{
-                const [calAno, calMesNum] = calMes.split("-").map(Number);
-                const primeiroDia = new Date(calAno, calMesNum-1, 1).getDay();
-                const diasNoMes   = new Date(calAno, calMesNum, 0).getDate();
-                const cells = [];
-                for(let i=0;i<primeiroDia;i++) cells.push(null);
-                for(let d=1;d<=diasNoMes;d++) cells.push(d);
-                const pad = n=>String(n).padStart(2,"0");
-                const isoD = d=>`${calAno}-${pad(calMesNum)}-${pad(d)}`;
-                const isSel = d=>diasSel.includes(isoD(d));
-                const toggleDia = d=>{
-                  const iso=isoD(d);
-                  setDiasSel(prev=>prev.includes(iso)?prev.filter(x=>x!==iso):[...prev,iso].sort());
-                  setForm(f=>({...f,data:iso}));
-                };
-                const prevMes=()=>{const d=new Date(calAno,calMesNum-2,1);setCalMes(`${d.getFullYear()}-${pad(d.getMonth()+1)}`);};
-                const nextMes=()=>{const d=new Date(calAno,calMesNum,1);setCalMes(`${d.getFullYear()}-${pad(d.getMonth()+1)}`);};
-                return(
-                  <div style={{marginBottom:14}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                      <button type="button" className="press" onClick={prevMes} style={{background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.15)",borderRadius:8,color:acent2,width:32,height:32,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
-                      <div style={{fontSize:14,fontWeight:700,color:txt}}>{MESES_FULL[calMesNum-1]} {calAno}</div>
-                      <button type="button" className="press" onClick={nextMes} style={{background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.15)",borderRadius:8,color:acent2,width:32,height:32,fontSize:16,display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:6}}>
-                      {["D","S","T","Q","Q","S","S"].map((d,i)=>(
-                        <div key={i} style={{textAlign:"center",fontSize:10,fontWeight:700,color:muted,padding:"2px 0"}}>{d}</div>
-                      ))}
-                      {cells.map((d,i)=>(
-                        <div key={i}>
-                          {d?(<button type="button" className="press" onClick={()=>toggleDia(d)}
-                            style={{width:"100%",aspectRatio:"1",borderRadius:8,border:"none",cursor:"pointer",
-                              background:isSel(d)?"linear-gradient(135deg,#0EA5E9,#0284C7)":"rgba(14,165,233,.06)",
-                              color:isSel(d)?"#fff":txt,fontWeight:isSel(d)?700:400,fontSize:13,
-                              boxShadow:isSel(d)?"0 2px 8px rgba(14,165,233,.4)":"none",
-                              outline:isoD(d)===hoje()&&!isSel(d)?"1.5px solid rgba(14,165,233,.4)":"none"}}>
-                            {d}
-                          </button>):(<div/>)}
-                        </div>
-                      ))}
-                    </div>
-                    {diasSel.length>0&&(
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"rgba(14,165,233,.08)",border:"1px solid rgba(14,165,233,.2)",borderRadius:10}}>
-                        <span style={{fontSize:12,color:acent2,fontWeight:600}}>📅 {diasSel.length} dia{diasSel.length>1?"s":""} selecionado{diasSel.length>1?"s":""}</span>
-                        <button type="button" onClick={()=>setDiasSel([])} style={{background:"none",border:"none",color:"#F87171",fontSize:12,fontWeight:600,cursor:"pointer"}}>Limpar</button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              {!editId&&<CalendarioMulti
+                calMes={calMes} setCalMes={setCalMes}
+                diasSel={diasSel} setDiasSel={setDiasSel}
+                setForm={setForm} txt={txt} acent2={acent2} muted={muted}
+              />}
               {/* Edição: campo data simples */}
               {editId&&(
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
