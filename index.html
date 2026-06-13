@@ -139,7 +139,7 @@
       const totD=dF.filter(d=>d.status!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
       const totP=dF.filter(d=>d.status==="pendente").reduce((s,d)=>s+calcTotal(d),0);
       const totA=movimentos.filter(m=>m.tipo==="adiantamento").reduce((s,m)=>s+num(m.valor),0);
-      const saldo=Math.max(0,totP-totA);
+      const saldo=totP-totA;
       doc.setFillColor(...INK);doc.rect(0,0,W,30,"F");
       doc.setFillColor(...PUR);doc.rect(0,0,5,30,"F");
       doc.setFont("helvetica","bold");doc.setFontSize(17);doc.setTextColor(...WHITE);
@@ -219,7 +219,7 @@
       const totA   = movimentos.filter(m=>m.tipo==="adiantamento").reduce((s,m)=>s+num(m.valor),0);
       const totPend= dPend.reduce((s,d)=>s+calcTotal(d),0);
       const totPago= dPagas.reduce((s,d)=>s+calcTotal(d),0);
-      const saldo  = Math.max(0,totPend-totA);
+      const saldo  = totPend-totA;
 
       // ── Cabeçalho ──
       doc.setFillColor(...INK);doc.rect(0,0,W,32,"F");
@@ -677,7 +677,7 @@
       const totD=diarias.filter(d=>nst2(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
       const totP=diarias.filter(d=>nst2(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0);
       const totA=movimentos.filter(m=>m.tipo==="adiantamento").reduce((s,m)=>s+num(m.valor),0);
-      const saldo=Math.max(0,totP-totA);
+      const saldo=totP-totA;
 
       const dFilt=diarias.filter(d=>{
         if(filtroMes&&d.data?.slice(0,7)!==filtroMes)return false;
@@ -920,8 +920,10 @@
           <div style={{margin:"20px 20px 0",borderRadius:20,overflow:"hidden",position:"relative",background:"linear-gradient(145deg,#040D1A,#071E38)",border:"1px solid rgba(14,165,233,.2)"}}>
             <div style={{position:"absolute",top:-60,right:-60,width:200,height:200,background:"radial-gradient(circle,rgba(14,165,233,.08) 0%,transparent 65%)",pointerEvents:"none"}}/>
             <div style={{padding:"24px 22px 20px",position:"relative"}}>
-              <div style={{fontSize:11,fontWeight:600,color:"rgba(56,189,248,.5)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:8}}>A receber</div>
-              <div style={{fontSize:38,fontWeight:800,color:saldo>0?"#FACC15":"#22D3EE",letterSpacing:"-.04em",lineHeight:1}}>{fm(saldo)}</div>
+              <div style={{fontSize:11,fontWeight:600,color:"rgba(56,189,248,.5)",textTransform:"uppercase",letterSpacing:"1.2px",marginBottom:8}}>
+                {saldo>0?"A receber":saldo<0?"Adiantamento maior":"Quitado"}
+              </div>
+              <div style={{fontSize:38,fontWeight:800,color:saldo>0?"#FACC15":saldo<0?"#F87171":"#22D3EE",letterSpacing:"-.04em",lineHeight:1}}>{saldo<0?"- "+fm(Math.abs(saldo)):fm(saldo)}</div>
               <div style={{display:"flex",gap:0,marginTop:20,paddingTop:16,borderTop:"1px solid rgba(14,165,233,.12)"}}>
                 {[["Pendentes",fm(totP),"#FACC15"],["Adiantado",fm(totA),"#22D3EE"],["Total",fm(totD),txt]].map(([l,v,c],i)=>(
                   <div key={l} style={{flex:1,paddingLeft:i>0?16:0,borderLeft:i>0?"1px solid rgba(14,165,233,.12)":"none",marginLeft:i>0?16:0}}>
@@ -977,7 +979,7 @@
                 <BtnPrimary onClick={()=>abrirForm()} style={{padding:"13px 28px"}}>+ Nova Diária</BtnPrimary>
               </div>
             ):dFilt.map(d=>{
-              const sc2=SC[d.status]||SC.pendente;
+              const sc2=SC[String(d.status||'pendente').toLowerCase()]||SC.pendente;
               const ti=TIPOS.find(t=>t.tipo===d.tipoDiaria);
               return(
                 <div key={d.id} style={{...card,marginBottom:10,overflow:"hidden"}}>
@@ -987,10 +989,10 @@
                         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
                           <span style={{fontSize:12,color:muted,fontWeight:500}}>{fd(d.data)}</span>
                           <button className="press"
-                            onClick={e=>{e.stopPropagation();d.status==="pendente"?marcarPago(d.id):voltarPendente(d.id);}}
+                            onClick={e=>{e.stopPropagation();nst2(d.status)==="pendente"?marcarPago(d.id):voltarPendente(d.id);}}
                             style={{display:"flex",alignItems:"center",gap:6,background:sc2.bg,border:"1px solid "+sc2.cor+"40",borderRadius:20,padding:"3px 10px 3px 6px",cursor:"pointer"}}>
                             <div style={{width:18,height:18,borderRadius:"50%",background:d.status==="pendente"?"rgba(250,204,21,.15)":"rgba(34,211,238,.2)",border:"1.5px solid "+sc2.cor,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                              {d.status==="pago"&&<span style={{fontSize:10,color:"#22D3EE",fontWeight:800,lineHeight:1}}>✓</span>}
+                              {nst2(d.status)==="pago"&&<span style={{fontSize:10,color:"#22D3EE",fontWeight:800,lineHeight:1}}>✓</span>}
                             </div>
                             <span style={{fontSize:11,fontWeight:700,color:sc2.cor}}>{sc2.label}</span>
                           </button>
@@ -998,16 +1000,16 @@
                         </div>
                         <div style={{fontSize:16,fontWeight:700,color:txt,lineHeight:1.3}}>{d.evento}</div>
                         {ti&&<div style={{fontSize:12,color:muted,marginTop:5}}>{ti.emoji} {ti.label}</div>}
-                        {(d.almoco||d.janta)&&(
+                        {(Number(d.almoco)>0||Number(d.janta)>0)&&(
                           <div style={{display:"flex",gap:10,marginTop:4}}>
-                            {d.almoco?<span style={{fontSize:11,color:"#38BDF8",fontWeight:600}}>🍽 {fm(d.almoco)}</span>:null}
-                            {d.janta?<span style={{fontSize:11,color:acent2,fontWeight:600}}>🌙 {fm(d.janta)}</span>:null}
+                            {Number(d.almoco)>0?<span style={{fontSize:11,color:"#38BDF8",fontWeight:600}}>🍽 {fm(d.almoco)}</span>:null}
+                            {Number(d.janta)>0?<span style={{fontSize:11,color:acent2,fontWeight:600}}>🌙 {fm(d.janta)}</span>:null}
                           </div>
                         )}
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
                         <div style={{fontSize:19,fontWeight:800,color:"#22D3EE"}}>{fm(d.valorDiaria||0)}</div>
-                        {(d.almoco||d.janta)&&<div style={{fontSize:13,fontWeight:700,color:txt,marginTop:3,borderTop:"1px solid rgba(14,165,233,.12)",paddingTop:3}}>= {fm(calcTotal(d))}</div>}
+                        {(Number(d.almoco)>0||Number(d.janta)>0)&&<div style={{fontSize:13,fontWeight:700,color:txt,marginTop:3,borderTop:"1px solid rgba(14,165,233,.12)",paddingTop:3}}>= {fm(calcTotal(d))}</div>}
                       </div>
                     </div>
                   </div>
@@ -1031,7 +1033,7 @@
         return(
           <div style={{paddingBottom:100}} className="fadein">
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"20px 20px 8px"}}>
-              {[["A receber",fm(saldo),"#FACC15"],["Pendentes",fm(totP),"#22D3EE"],["Adiantamentos",fm(totA),"#38BDF8"]].map(([l,v,c])=>(
+              {[["A receber",saldo<0?"- "+fm(Math.abs(saldo)):fm(saldo),saldo>0?"#FACC15":saldo<0?"#F87171":"#22D3EE"],["Pendentes",fm(totP),"#22D3EE"],["Adiantamentos",fm(totA),"#38BDF8"]].map(([l,v,c])=>(
                 <div key={l} style={{...card,padding:"14px"}}>
                   <div style={{fontSize:9,color:muted,fontWeight:700,textTransform:"uppercase",letterSpacing:"1px",marginBottom:6}}>{l}</div>
                   <div style={{fontSize:15,fontWeight:800,color:c}}>{v}</div>
@@ -1048,7 +1050,7 @@
               </div>
               <div style={{background:"rgba(56,189,248,.08)",border:"1px solid rgba(56,189,248,.18)",borderRadius:10,padding:"12px 14px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <span style={{fontSize:12,color:muted,fontWeight:500}}>Ainda a receber</span>
-                <span style={{fontSize:17,fontWeight:800,color:"#FACC15"}}>{fm(saldo)}</span>
+                <span style={{fontSize:17,fontWeight:800,color:saldo>0?"#FACC15":saldo<0?"#F87171":"#22D3EE"}}>{saldo<0?"- "+fm(Math.abs(saldo)):fm(saldo)}</span>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                 <div><label style={lbl}>Data</label><input type="date" style={inp} value={mForm.data} onChange={e=>setMForm(f=>({...f,data:e.target.value}))}/></div>
@@ -1133,7 +1135,7 @@
                     <span style={{fontSize:15}}>💰</span>
                     <span style={{fontSize:14,fontWeight:700,color:txt}}>Saldo a Receber</span>
                   </div>
-                  <span style={{fontSize:17,fontWeight:800,color:saldo>0?"#22D3EE":"#FACC15"}}>{fm(saldo)}</span>
+                  <span style={{fontSize:17,fontWeight:800,color:saldo>0?"#22D3EE":saldo<0?"#F87171":"#22D3EE"}}>{saldo<0?"- "+fm(Math.abs(saldo)):fm(saldo)}</span>
                 </div>
               </div>
             </div>
