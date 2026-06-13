@@ -778,23 +778,61 @@ function App(){
     const pct=totD>0?Math.min(100,Math.round(totRec/totD*100)):0;
     const pA=totD>0?Math.min(100,Math.round(totA/totD*100)):0;
     const pP=totD>0?Math.min(100,Math.round(totPago/totD*100)):0;
-    function whatsapp(){
-      const txt=[
+    const [waModal,setWaModal]=useState(false);
+    const [waOpts,setWaOpts]=useState({total:true,pagas:true,pendentes:true,listaPendentes:true,adiantamentos:true,listaAdiantamentos:false});
+    const togOpt=k=>setWaOpts(o=>({...o,[k]:!o[k]}));
+    function enviarWA(){
+      const o=waOpts;
+      const linhas=[
         "💼 *FECHAMENTO DE DIÁRIAS*","━━━━━━━━━━━━━━━━━━━━━━","",
         "📋 *Resumo*",
-        "• Total: *"+fm(totD)+"*",
-        dPagas.length>0?"• Pagas ("+dPagas.length+"): *"+fm(totPago)+"*":"",
-        dPend.length>0?"• Pendentes ("+dPend.length+"): *"+fm(totPend)+"*":"",
-        "","💵 *Adiantamentos*",
-        movimentos.length>0?movimentos.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("\n"):"• Nenhum",
-        "• Total: *"+fm(totA)+"*","",
+        o.total?"• Total em diárias: *"+fm(totD)+"*":"",
+        o.pagas&&dPagas.length>0?"• Diárias pagas ("+dPagas.length+"): *"+fm(totPago)+"*":"",
+        o.pendentes&&dPend.length>0?"• Diárias pendentes ("+dPend.length+"): *"+fm(totPend)+"*":"",
+        o.adiantamentos&&movimentos.length>0?"\n💵 *Adiantamentos*\n"+(o.listaAdiantamentos?movimentos.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("\n")+"\n":"")+"• Total adiantado: *"+fm(totA)+"*":"",
+        "",
         "━━━━━━━━━━━━━━━━━━━━━━",
-        saldo>0?"💰 *A RECEBER: "+fm(saldo)+"*":saldo<0?"✅ *QUITADO* (crédito "+fm(Math.abs(saldo))+")":"✅ *QUITADO*",
-        dPend.length>0?"\n⏳ *Pendentes:*\n"+dPend.map(d=>"• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*").join("\n"):"",
+        saldo>0?"💰 *A RECEBER: "+fm(saldo)+"*":saldo<0?"✅ *QUITADO* (crédito de "+fm(Math.abs(saldo))+")":"✅ *QUITADO*",
+        o.listaPendentes&&dPend.length>0?"\n⏳ *Detalhes pendentes:*\n"+dPend.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>"• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*").join("\n"):"",
       ].filter(l=>l!=="").join("\n");
-      window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank");
+      window.open("https://wa.me/?text="+encodeURIComponent(linhas),"_blank");
+      setWaModal(false);
     }
+    const Sw=({val,onClick,label,sub})=>(
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid rgba(14,165,233,.07)"}}>
+        <div><div style={{fontSize:13,fontWeight:600,color:T}}>{label}</div>{sub&&<div style={{fontSize:11,color:MT,marginTop:2}}>{sub}</div>}</div>
+        <button type="button" onClick={onClick} style={{width:46,height:26,borderRadius:13,border:"none",cursor:"pointer",position:"relative",background:val?"linear-gradient(135deg,#15803D,#16A34A)":"#0D2440",flexShrink:0}}>
+          <div style={{position:"absolute",top:3,left:val?22:3,width:20,height:20,borderRadius:"50%",background:val?"#fff":"#4B5568",transition:"left .18s"}}/>
+        </button>
+      </div>
+    );
     return(
+      <>
+      {waModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.85)",zIndex:60,display:"flex",alignItems:"flex-end",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+          <div className="fadein" style={{...crd,width:"100%",maxWidth:520,borderRadius:"20px 20px 0 0",padding:"20px 20px 32px",borderBottom:"none",maxHeight:"85vh",overflowY:"auto"}}>
+            <div style={{width:36,height:4,background:"rgba(14,165,233,.15)",borderRadius:2,margin:"0 auto 18px"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
+              <div style={{fontSize:22}}>💬</div>
+              <div><div style={{fontSize:16,fontWeight:800,color:T}}>Compartilhar no WhatsApp</div><div style={{fontSize:12,color:MT,marginTop:2}}>Escolha o que incluir na mensagem</div></div>
+            </div>
+            <Sw val={waOpts.total} onClick={()=>togOpt("total")} label="Total em diárias" sub={fm(totD)}/>
+            <Sw val={waOpts.pagas} onClick={()=>togOpt("pagas")} label="Diárias pagas" sub={dPagas.length+" diárias · "+fm(totPago)}/>
+            <Sw val={waOpts.pendentes} onClick={()=>togOpt("pendentes")} label="Diárias pendentes" sub={dPend.length+" diárias · "+fm(totPend)}/>
+            <Sw val={waOpts.listaPendentes} onClick={()=>togOpt("listaPendentes")} label="Lista detalhada de pendentes" sub="Data e valor de cada uma"/>
+            <Sw val={waOpts.adiantamentos} onClick={()=>togOpt("adiantamentos")} label="Adiantamentos" sub={movimentos.length+" recebimento(s) · "+fm(totA)}/>
+            <Sw val={waOpts.listaAdiantamentos} onClick={()=>togOpt("listaAdiantamentos")} label="Lista detalhada de adiantamentos" sub="Data e valor de cada um"/>
+            <div style={{marginTop:18,padding:"12px 16px",background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.15)",borderRadius:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:6}}>Saldo final</div>
+              <div style={{fontSize:15,fontWeight:800,color:saldo>0?"#4ADE80":saldo<0?"#F87171":"#4ADE80"}}>{saldo>0?"💰 A receber: "+fm(saldo):saldo<0?"✅ Quitado (crédito "+fm(Math.abs(saldo))+")":"✅ Quitado"}</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}}>
+              <button className="press" onClick={()=>setWaModal(false)} style={{padding:"13px",background:"#0A1E35",border:"1px solid rgba(14,165,233,.12)",borderRadius:12,color:MT,fontWeight:600,fontSize:14}}>Cancelar</button>
+              <button className="press" onClick={enviarWA} style={{padding:"13px",background:"linear-gradient(135deg,#15803D,#16A34A)",border:"none",borderRadius:12,color:"#4ADE80",fontWeight:700,fontSize:14}}>Enviar 💬</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{paddingBottom:90}} className="fadein">
         <div style={{margin:"16px 16px 0",borderRadius:20,background:"linear-gradient(145deg,#040D1A,#071E38)",border:"1px solid rgba(74,222,128,.2)",overflow:"hidden"}}>
           <div style={{padding:"22px 22px 20px"}}>
@@ -822,7 +860,7 @@ function App(){
               </div>
             )}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}}>
-              <button className="press" onClick={whatsapp} style={{background:"linear-gradient(135deg,#15803D,#16A34A)",border:"1px solid rgba(74,222,128,.25)",borderRadius:10,color:"#4ADE80",padding:"13px",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>💬 WhatsApp</button>
+              <button className="press" onClick={()=>setWaModal(true)} style={{background:"linear-gradient(135deg,#15803D,#16A34A)",border:"1px solid rgba(74,222,128,.25)",borderRadius:10,color:"#4ADE80",padding:"13px",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>💬 WhatsApp</button>
               <button className="press" onClick={async()=>{setGerandoF(true);try{await gerarPDFFechamento(diarias,movimentos);}catch(e){alert("Erro: "+e.message);}finally{setGerandoF(false);}}} disabled={gerandoF}
                 style={{background:"linear-gradient(135deg,#064E3B,#047857)",border:"1px solid rgba(34,211,238,.25)",borderRadius:10,color:"#22D3EE",padding:"13px",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:7,opacity:gerandoF?.6:1}}>
                 📄 {gerandoF?"Gerando…":"PDF"}
