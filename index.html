@@ -591,16 +591,23 @@
       async function salvarMov(){
         const v=num(mForm.valor);
         if(!v||v<=0){setMErro("Informe um valor válido.");return;}
-        const payload={tipo:"adiantamento",valor:v,data:mForm.data,obs:mForm.obs||""};
-        await fns.addDoc(colMovimentos(usuario.uid),payload);
-        setMForm(f=>({...f,valor:"",obs:""}));setMErro("");
-        showToast("Adiantamento registrado");
-        await carregarDados(usuario.uid);
+        try{
+          const payload={categoria:"adiantamento",tipo:"adiantamento",valor:v,data:mForm.data,obs:mForm.obs||"",desc:mForm.obs||""};
+          await fns.addDoc(colDiarias(usuario.uid),payload);
+          setMForm(f=>({...f,valor:"",obs:""}));setMErro("");
+          showToast("Adiantamento registrado");
+          await carregarDados(usuario.uid);
+        }catch(err){
+          setMErro("Erro ao salvar: "+err.message);
+        }
       }
 
-      async function excluirMov(id,colecao="movimentos"){
-        try{await fns.deleteDoc(fns.doc(db,"users",usuario.uid,colecao,id));}
-        catch{await fns.deleteDoc(fns.doc(db,"users",usuario.uid,"lancamentos",id));}
+      async function excluirMov(id){
+        try{
+          await fns.deleteDoc(fns.doc(db,"users",usuario.uid,"lancamentos",id));
+        }catch(e){
+          try{await fns.deleteDoc(fns.doc(db,"users",usuario.uid,"movimentos",id));}catch{}
+        }
         setMovimentos(m=>m.filter(x=>x.id!==id));
         showToast("Removido","#F87171");
       }
