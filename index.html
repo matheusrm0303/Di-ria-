@@ -320,6 +320,9 @@ function App(){
   const [calMes,setCalMes]=useState(hoje().slice(0,7));
   const [mForm,setMForm]=useState({valor:"",data:hoje(),obs:""});
   const [mErro,setMErro]=useState("");
+  const [waModal,setWaModal]=useState(false);
+  const [waOpts,setWaOpts]=useState({total:true,pagas:true,pendentes:true,listaPendentes:true,adiantamentos:true,listaAdiantamentos:false});
+  const togOpt=k=>setWaOpts(o=>({...o,[k]:!o[k]}));
 
   const colL=uid=>fb.collection(db,"users",uid,"lancamentos");
 
@@ -778,9 +781,6 @@ function App(){
     const pct=totD>0?Math.min(100,Math.round(totRec/totD*100)):0;
     const pA=totD>0?Math.min(100,Math.round(totA/totD*100)):0;
     const pP=totD>0?Math.min(100,Math.round(totPago/totD*100)):0;
-    const [waModal,setWaModal]=useState(false);
-    const [waOpts,setWaOpts]=useState({total:true,pagas:true,pendentes:true,listaPendentes:true,adiantamentos:true,listaAdiantamentos:false});
-    const togOpt=k=>setWaOpts(o=>({...o,[k]:!o[k]}));
     function enviarWA(){
       const o=waOpts;
       const totAlim=diarias.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
