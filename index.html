@@ -935,11 +935,21 @@ function App(){
       const saldoF=totPendF-totAF;
       const totAlimF=dFilter.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
       const periodo=waMes?(()=>{const[yr,mo]=waMes.split("-");return MFULL[parseInt(mo)-1]+" "+yr;})():"Geral";
+
+      // Lista detalhada de pendentes
       const detPend=dPendF.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
         const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
-        return "• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*"+(alim>0?" (alim. "+fm(alim)+")":"");
+        return "⏳ "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*"+(alim>0?" (alim. "+fm(alim)+")":"");
       }).join("\n");
+
+      // Lista detalhada de pagas
+      const detPagas=dPagasF.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
+        const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
+        return "✅ "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*"+(alim>0?" (alim. "+fm(alim)+")":"");
+      }).join("\n");
+
       const detAdiant=mFilter.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("\n");
+
       const linhas=[
         "💼 *FECHAMENTO DE DIÁRIAS*",
         "📅 Período: *"+periodo+"*",
@@ -953,7 +963,10 @@ function App(){
         "",
         "━━━━━━━━━━━━━━━━━━━━━━",
         saldoF>0?"💰 *A RECEBER: "+fm(saldoF)+"*":saldoF<0?"✅ *QUITADO* (crédito de "+fm(Math.abs(saldoF))+")":"✅ *QUITADO*",
-        o.listaPendentes&&dPendF.length>0?"\n⏳ *Detalhes pendentes:*\n"+detPend:"",
+        // Lista de pagas (quando toggle ativo)
+        o.pagas&&o.listaPendentes&&dPagasF.length>0?"\n✅ *Diárias pagas:*\n"+detPagas:"",
+        // Lista de pendentes (quando toggle ativo)
+        o.listaPendentes&&dPendF.length>0?"\n⏳ *Diárias pendentes:*\n"+detPend:"",
       ].filter(l=>l!=="").join("\n");
       window.open("https://wa.me/?text="+encodeURIComponent(linhas),"_blank");
       setWaModal(false);
@@ -988,7 +1001,7 @@ function App(){
             <Sw val={waOpts.total} onClick={()=>togOpt("total")} label="Total em diárias" sub={fm(totD)}/>
             <Sw val={waOpts.pagas} onClick={()=>togOpt("pagas")} label="Diárias pagas" sub={dPagas.length+" diárias · "+fm(totPago)}/>
             <Sw val={waOpts.pendentes} onClick={()=>togOpt("pendentes")} label="Diárias pendentes" sub={dPend.length+" diárias · "+fm(totPend)}/>
-            <Sw val={waOpts.listaPendentes} onClick={()=>togOpt("listaPendentes")} label="Lista detalhada de pendentes" sub="Data e valor de cada uma"/>
+            <Sw val={waOpts.listaPendentes} onClick={()=>togOpt("listaPendentes")} label="Lista detalhada de diárias" sub="Data, evento e valor de cada uma (pagas e pendentes)"/>
             <Sw val={waOpts.adiantamentos} onClick={()=>togOpt("adiantamentos")} label="Adiantamentos" sub={movimentos.length+" recebimento(s) · "+fm(totA)}/>
             <Sw val={waOpts.listaAdiantamentos} onClick={()=>togOpt("listaAdiantamentos")} label="Lista detalhada de adiantamentos" sub="Data e valor de cada um"/>
             {(()=>{
