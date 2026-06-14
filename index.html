@@ -103,42 +103,71 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
   const jsPDF=await loadJsPDF();
   const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210,M=14;let y=14;
-  // Paleta clara — boa para impressão
-  const INK=[30,58,92],AZUL=[14,122,198],VERDE=[22,163,74],AMAR=[180,130,0],CZ=[100,116,139],BR=[255,255,255],CEU=[14,122,198];
-  const LIN1=[240,247,255],LIN2=[255,255,255],BORDA=[200,220,240],TINTATX=[30,40,60];
-  const chk=(n=10)=>{if(y+n>282){doc.addPage();doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");y=14;}};
-  const sec=(t,cor)=>{chk(14);doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);doc.text(t,M+4,y+5.5);y+=12;};
+  // Paleta impressão: fundo branco, azul corporativo
+  const AZUL=[24,90,169],AZUL2=[14,122,198],VERDE=[22,150,70],AMAR=[180,130,0],
+        CZ=[120,130,145],BR=[255,255,255],TX=[30,40,60],
+        LIN1=[242,247,255],LIN2=[255,255,255],BORDA=[210,225,245];
+
+  const novaPag=()=>{
+    doc.addPage();
+    doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
+    y=14;
+  };
+  const chk=(n=10)=>{if(y+n>282)novaPag();};
+  const sec=(t,cor)=>{
+    chk(14);
+    doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
+    doc.text(t,M+4,y+5.5);y+=12;
+  };
+
   const dF=diarias.filter(d=>!mes||d.data.slice(0,7)===mes).sort((a,b)=>a.data.localeCompare(b.data));
   const totD2=dF.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
   const totP2=dF.filter(d=>nst(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0);
   const totA2=movimentos.reduce((s,m)=>s+num(m.valor),0);
   const saldo2=totP2-totA2;
-  doc.setFillColor(...INK);doc.rect(0,0,W,30,"F");
-  doc.setFillColor(56,180,255);doc.rect(0,0,5,30,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(17);doc.setTextColor(...BR);doc.text("RELATÓRIO DE DIÁRIAS",M+7,14);
+
+  // Fundo branco da página
+  doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
+
+  // Cabeçalho
+  doc.setFillColor(...AZUL);doc.rect(0,0,W,28,"F");
+  doc.setFillColor(...AZUL2);doc.rect(0,0,5,28,"F");
+  doc.setFont("helvetica","bold");doc.setFontSize(16);doc.setTextColor(...BR);
+  doc.text("RELATÓRIO DE DIÁRIAS",M+7,13);
   const periodo=mes?(()=>{const[yr,mo]=mes.split("-");return MFULL[parseInt(mo)-1]+" "+yr;})():"Todos os períodos";
-  doc.setFontSize(9);doc.setTextColor(180,210,255);doc.text(periodo,M+7,23);doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,23,{align:"right"});
-  y=38;
+  doc.setFontSize(8);doc.setTextColor(200,220,255);
+  doc.text(periodo,M+7,21);
+  doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,21,{align:"right"});
+  y=36;
+
+  // Cards resumo
   const cw=(W-M*2-8)/3;
-  [[fm(totD2),"Total Diárias",CEU],[fm(totA2),"Adiantamentos",VERDE],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?AMAR:VERDE]].forEach(([val,lbl,cor],i)=>{
+  [[fm(totD2),"Total em Diárias",AZUL2],[fm(totA2),"Adiantamentos",[22,150,70]],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
-    doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,22,2,2,"F");
-    doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,22,2,2,"S");
-    doc.setFillColor(...cor);doc.rect(x,y,3,22,"F");
-    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(...CZ);doc.text(lbl.toUpperCase(),x+6,y+8);
-    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TINTATX);doc.text(val,x+6,y+17);
-  });y+=28;
+    doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,20,2,2,"F");
+    doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,20,2,2,"S");
+    doc.setFillColor(...cor);doc.rect(x,y,3,20,"F");
+    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(...CZ);
+    doc.text(lbl.toUpperCase(),x+6,y+7);
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
+    doc.text(val,x+6,y+15);
+  });y+=26;
+
+  // Tabela diárias
   sec("DIÁRIAS TRABALHADAS",AZUL);
   const cols=[M,M+26,M+72,M+120,M+148,M+170];
-  doc.setFillColor(...INK);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
+  doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,7,"F");
+  doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
   ["Data","Evento","Tipo","Total","Status","Obs"].forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
+
   dF.forEach((d,i)=>{
     chk(8);
     doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
     doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
     const sc=SC[nst(d.status)]||SC.pendente;
     const tipo=(TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua";
-    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TINTATX);
+    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
     doc.text(fd(d.data),cols[0],y+4);
     doc.text(String(d.evento||"-").slice(0,20),cols[1],y+4);
     doc.text(tipo.replace("Diária de ",""),cols[2],y+4);
@@ -146,15 +175,26 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
     const rgb=sc.cor.slice(1);
     doc.setTextColor(parseInt(rgb.slice(0,2),16),parseInt(rgb.slice(2,4),16),parseInt(rgb.slice(4,6),16));
     doc.text(sc.label,cols[4],y+4);
-    doc.setTextColor(...BR);doc.text(String(d.obs||"").slice(0,10),cols[5],y+4);
+    doc.setTextColor(...CZ);doc.text(String(d.obs||"").slice(0,10),cols[5],y+4);
     y+=7;
   });
   if(!dF.length){doc.setFontSize(9);doc.setTextColor(...CZ);doc.text("Nenhuma diária.",M+4,y+5);y+=10;}
-  y+=2;doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,8,"F");
+
+  y+=2;
+  doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,8,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-  doc.text("TOTAL: "+dF.length+" diárias",M+4,y+5.5);doc.text(fm(totD2),W-M,y+5.5,{align:"right"});
+  doc.text("TOTAL: "+dF.length+" diárias",M+4,y+5.5);
+  doc.text(fm(totD2),W-M,y+5.5,{align:"right"});
+
+  // Rodapé
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...INK);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);doc.text("Relatório de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFillColor(...AZUL);doc.rect(0,288,W,9,"F");
+    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);
+    doc.text("Relatório de Diárias",M,294);
+    doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});
+  }
   const nome=mes?(()=>{const[yr,mo]=mes.split("-");return"diarias_"+MABR[parseInt(mo)-1]+yr+".pdf";})():"diarias.pdf";
   abrirBlob(doc,nome);
 }
@@ -163,12 +203,29 @@ async function gerarPDFFechamento(diarias,movimentos){
   const jsPDF=await loadJsPDF();
   const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210,M=14;let y=14;
-  // Paleta clara — boa para impressão
-  const INK=[20,50,90],AZUL=[14,122,198],VERDE=[22,163,74],AMAR=[180,130,0],CZ=[100,116,139],BR=[255,255,255],CEU=[14,122,198];
-  const LIN1=[240,247,255],LIN2=[255,255,255],BORDA=[200,220,240],TINTATX=[30,40,60];
+  const AZUL=[24,90,169],AZUL2=[14,122,198],VERDE=[22,150,70],AMAR=[180,130,0],
+        CZ=[120,130,145],BR=[255,255,255],TX=[30,40,60],
+        LIN1=[242,247,255],LIN2=[255,255,255],BORDA=[210,225,245];
   const ds=v=>String(v||"");
-  const chk=(n=10)=>{if(y+n>282){doc.addPage();doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");y=14;}};
-  const sec=(t,cor)=>{chk(14);doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);doc.text(t,M+4,y+5.5);y+=12;};
+
+  const novaPag=()=>{
+    doc.addPage();
+    doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
+    y=14;
+  };
+  const chk=(n=10)=>{if(y+n>282)novaPag();};
+  const sec=(t,cor)=>{
+    chk(14);
+    doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
+    doc.text(t,M+4,y+5.5);y+=12;
+  };
+  const cabTabela=(cols,headers)=>{
+    doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,7,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
+    headers.forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
+  };
+
   const dPend=diarias.filter(d=>nst(d.status)==="pendente");
   const dPagas=diarias.filter(d=>nst(d.status)==="pago");
   const totD2=diarias.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
@@ -176,82 +233,154 @@ async function gerarPDFFechamento(diarias,movimentos){
   const totPend=dPend.reduce((s,d)=>s+calcTotal(d),0);
   const totPago=dPagas.reduce((s,d)=>s+calcTotal(d),0);
   const saldo2=totPend-totA2;
-  doc.setFillColor(...INK);doc.rect(0,0,W,32,"F");
-  doc.setFillColor(...VERDE);doc.rect(0,0,5,32,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(18);doc.setTextColor(...BR);doc.text("FECHAMENTO",M+7,15);
-  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...VERDE);doc.text("Resumo completo de diárias e adiantamentos",M+7,24);
-  doc.setFontSize(8);doc.setTextColor(...CZ);doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,24,{align:"right"});
-  y=40;
+
+  // Fundo branco
+  doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
+
+  // Cabeçalho
+  doc.setFillColor(...VERDE);doc.rect(0,0,W,28,"F");
+  doc.setFillColor(10,100,50);doc.rect(0,0,5,28,"F");
+  doc.setFont("helvetica","bold");doc.setFontSize(16);doc.setTextColor(...BR);
+  doc.text("FECHAMENTO",M+7,13);
+  doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(200,255,220);
+  doc.text("Resumo completo de diárias e adiantamentos",M+7,21);
+  doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,21,{align:"right"});
+  y=36;
+
+  // Cards
   const cw=(W-M*2-8)/3;
-  [[fm(totD2),"Total",AZUL],[fm(totA2),"Adiantamentos",AMAR],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?VERDE:AMAR]].forEach(([val,lbl,cor],i)=>{
+  [[fm(totD2),"Total em Diárias",AZUL2],[fm(totA2),"Adiantamentos",[180,130,0]],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?VERDE:[180,130,0]]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
-    doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,22,2,2,"F");
-    doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,22,2,2,"S");
-    doc.setFillColor(...cor);doc.rect(x,y,3,22,"F");
-    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(...CZ);doc.text(lbl.toUpperCase(),x+6,y+8);
-    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TINTATX);doc.text(val,x+6,y+17);
-  });y+=30;
+    doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,20,2,2,"F");
+    doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,20,2,2,"S");
+    doc.setFillColor(...cor);doc.rect(x,y,3,20,"F");
+    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(...CZ);
+    doc.text(lbl.toUpperCase(),x+6,y+7);
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
+    doc.text(val,x+6,y+15);
+  });y+=26;
+
+  // Resumo geral
   sec("RESUMO GERAL",AZUL);
-  [[fm(totD2),"Total em Diárias",TINTATX],[fm(totPago),"Diárias Pagas ("+dPagas.length+")",VERDE],[fm(totPend),"Diárias Pendentes ("+dPend.length+")",AMAR],[fm(totA2),"Adiantamentos",AZUL],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?AMAR:VERDE]].forEach(([v,l,cor],i)=>{
-    chk(9);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y,W-M*2,8,"F");
+  [[fm(totD2),"Total em Diárias",TX],[fm(totPago),"Diárias Pagas ("+dPagas.length+")",VERDE],[fm(totPend),"Diárias Pendentes ("+dPend.length+")",[180,130,0]],[fm(totA2),"Adiantamentos",AZUL2],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([v,l,cor],i)=>{
+    chk(9);
+    doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y,W-M*2,8,"F");
     doc.setDrawColor(...BORDA);doc.line(M,y+8,W-M,y+8);
     doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...CZ);doc.text(l,M+4,y+5.5);
-    doc.setFont("helvetica","bold");doc.setTextColor(...cor);doc.text(v,W-M,y+5.5,{align:"right"});y+=8;
+    doc.setFont("helvetica","bold");doc.setTextColor(...cor);doc.text(v,W-M,y+5.5,{align:"right"});
+    y+=8;
   });y+=6;
+
+  // Box saldo
+  chk(20);
+  const salBg=saldo2>0?[240,252,244]:saldo2<0?[240,252,244]:[253,251,235];
+  const salCor=saldo2>0?VERDE:saldo2<0?AZUL2:[180,130,0];
+  doc.setFillColor(...salBg);doc.roundedRect(M,y,W-M*2,16,3,3,"F");
+  doc.setDrawColor(...salCor);doc.roundedRect(M,y,W-M*2,16,3,3,"S");
+  doc.setFillColor(...salCor);doc.rect(M,y,4,16,"F");
+  doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
+  doc.text(saldo2>=0?"VALOR A RECEBER":"CRÉDITO",M+8,y+7);
+  doc.setFontSize(13);doc.setTextColor(...salCor);
+  doc.text(fm(Math.abs(saldo2)),W-M,y+11,{align:"right"});
+  y+=22;
+
+  // Diárias pendentes
   if(dPend.length>0){
     sec("DIÁRIAS PENDENTES",[180,130,0]);
     const cp=[M,M+26,M+82,M+122,M+150,M+172];
-    doc.setFillColor(...INK);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
-    ["Data","Evento","Tipo","Diária","Alim.","Total"].forEach((h,i)=>doc.text(h,cp[i],y+5));y+=8;
+    cabTabela(cp,["Data","Evento","Tipo","Diária","Alim.","Total"]);
     dPend.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((d,i)=>{
-      chk(8);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      chk(8);
+      doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
       doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
       const tipo=((TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
       const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
-      doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TINTATX);
-      doc.text(fd(ds(d.data)),cp[0],y+4);doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cp[1],y+4);doc.text(tipo,cp[2],y+4);doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
-      doc.setTextColor(120,80,200);doc.text(alim>0?fm(alim):"-",cp[4],y+4);doc.setTextColor(...AMAR);doc.text(fm(calcTotal(d)),cp[5],y+4);y+=7;
+      doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
+      doc.text(fd(ds(d.data)),cp[0],y+4);
+      doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cp[1],y+4);
+      doc.text(tipo,cp[2],y+4);
+      doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
+      doc.setTextColor(100,60,180);doc.text(alim>0?fm(alim):"-",cp[4],y+4);
+      doc.setTextColor(180,130,0);doc.text(fm(calcTotal(d)),cp[5],y+4);
+      y+=7;
     });
-    y+=2;doc.setFillColor(180,130,0);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...INK);
-    doc.text("SUBTOTAL ("+dPend.length+")",M+4,y+5.5);doc.text(fm(totPend),W-M,y+5.5,{align:"right"});y+=14;
+    y+=2;
+    doc.setFillColor(180,130,0);doc.rect(M,y,W-M*2,8,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
+    doc.text("SUBTOTAL ("+dPend.length+" diárias)",M+4,y+5.5);
+    doc.text(fm(totPend),W-M,y+5.5,{align:"right"});y+=14;
   }
+
+  // Diárias pagas
   if(dPagas.length>0){
     sec("DIÁRIAS PAGAS",VERDE);
     const cp=[M,M+26,M+82,M+122,M+150,M+172];
-    doc.setFillColor(...INK);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
-    ["Data","Evento","Tipo","Diária","Alim.","Total"].forEach((h,i)=>doc.text(h,cp[i],y+5));y+=8;
+    cabTabela(cp,["Data","Evento","Tipo","Diária","Alim.","Total"]);
     dPagas.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((d,i)=>{
-      chk(8);doc.setFillColor(i%2===0?14:11,i%2===0?16:14,i%2===0?30:24);doc.rect(M,y-1,W-M*2,7,"F");
+      chk(8);
+      doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
       const tipo=((TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
       const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
       doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...CZ);
-      doc.text(fd(ds(d.data)),cp[0],y+4);doc.text(String(d.evento||"-").slice(0,18),cp[1],y+4);doc.text(tipo,cp[2],y+4);doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
-      doc.setTextColor(167,139,250);doc.text(alim>0?fm(alim):"-",cp[4],y+4);doc.setTextColor(...VERDE);doc.text(fm(calcTotal(d)),cp[5],y+4);y+=7;
+      doc.text(fd(ds(d.data)),cp[0],y+4);
+      doc.text(String(d.evento||"-").slice(0,18),cp[1],y+4);
+      doc.text(tipo,cp[2],y+4);
+      doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
+      doc.setTextColor(100,60,180);doc.text(alim>0?fm(alim):"-",cp[4],y+4);
+      doc.setTextColor(...VERDE);doc.text(fm(calcTotal(d)),cp[5],y+4);
+      y+=7;
     });
-    y+=2;doc.setFillColor(...VERDE);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...INK);
-    doc.text("SUBTOTAL ("+dPagas.length+")",M+4,y+5.5);doc.text(fm(totPago),W-M,y+5.5,{align:"right"});y+=14;
+    y+=2;
+    doc.setFillColor(...VERDE);doc.rect(M,y,W-M*2,8,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
+    doc.text("SUBTOTAL ("+dPagas.length+" diárias)",M+4,y+5.5);
+    doc.text(fm(totPago),W-M,y+5.5,{align:"right"});y+=14;
   }
+
+  // Adiantamentos
   if(movimentos.length>0){
-    chk(20);sec("ADIANTAMENTOS",CEU);
-    const ma=[M,M+50,M+120];
-    doc.setFillColor(18,20,36);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...CZ);
-    ["Data","Observação","Valor"].forEach((h,i)=>doc.text(h,ma[i],y+5));y+=8;
+    chk(20);sec("ADIANTAMENTOS RECEBIDOS",AZUL2);
+    const ma=[M,M+50,M+130];
+    cabTabela(ma,["Data","Observação","Valor"]);
     movimentos.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((m,i)=>{
-      chk(8);doc.setFillColor(i%2===0?14:11,i%2===0?16:14,i%2===0?30:24);doc.rect(M,y-1,W-M*2,7,"F");
-      doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...BR);
-      doc.text(fd(ds(m.data)),ma[0],y+4);doc.text(String(m.obs||"—").slice(0,34),ma[1],y+4);
-      doc.setTextColor(...CEU);doc.text(fm(num(m.valor)),ma[2],y+4);y+=7;
+      chk(8);
+      doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
+      doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
+      doc.text(fd(ds(m.data)),ma[0],y+4);
+      doc.text(String(m.obs||"—").slice(0,38),ma[1],y+4);
+      doc.setTextColor(...AZUL2);doc.text(fm(num(m.valor)),ma[2],y+4);
+      y+=7;
     });
-    y+=2;doc.setFillColor(...CEU);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...INK);
-    doc.text("TOTAL ADIANTADO",M+4,y+5.5);doc.text(fm(totA2),W-M,y+5.5,{align:"right"});y+=14;
+    y+=2;
+    doc.setFillColor(...AZUL2);doc.rect(M,y,W-M*2,8,"F");
+    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
+    doc.text("TOTAL ADIANTADO",M+4,y+5.5);
+    doc.text(fm(totA2),W-M,y+5.5,{align:"right"});y+=14;
   }
-  chk(28);doc.setFillColor(...(saldo2>0?[235,252,243]:[255,251,235]));doc.roundedRect(M,y,W-M*2,22,3,3,"F");
-  doc.setDrawColor(...(saldo2>0?VERDE:AMAR));doc.roundedRect(M,y,W-M*2,22,3,3,"S");
-  doc.setFillColor(...(saldo2>0?VERDE:AMAR));doc.rect(M,y,5,22,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TINTATX);doc.text(saldo2>=0?"VALOR A RECEBER":"CRÉDITO",M+10,y+9);
-  doc.setFontSize(16);doc.setTextColor(...(saldo2>0?VERDE:AMAR));doc.text(fm(Math.abs(saldo2)),M+10,y+18);
+
+  // Saldo final grande
+  chk(26);
+  doc.setFillColor(...salBg);doc.roundedRect(M,y,W-M*2,22,3,3,"F");
+  doc.setDrawColor(...salCor);doc.roundedRect(M,y,W-M*2,22,3,3,"S");
+  doc.setFillColor(...salCor);doc.rect(M,y,5,22,"F");
+  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TX);
+  doc.text(saldo2>=0?"VALOR FINAL A RECEBER":"CRÉDITO",M+10,y+9);
+  doc.setFontSize(16);doc.setTextColor(...salCor);
+  doc.text(fm(Math.abs(saldo2)),M+10,y+18);
+  doc.setFontSize(8);doc.setTextColor(...CZ);
+  doc.text(diarias.length+" diárias  ·  "+fm(totA2)+" adiantado  ·  total "+fm(totD2),W-M,y+18,{align:"right"});
+
+  // Rodapé
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...INK);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);doc.text("Fechamento · Controle de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFillColor(...AZUL);doc.rect(0,288,W,9,"F");
+    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);
+    doc.text("Fechamento · Controle de Diárias",M,294);
+    doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});
+  }
   abrirBlob(doc,"fechamento_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".pdf");
 }
 
@@ -332,6 +461,7 @@ function App(){
   const [mErro,setMErro]=useState("");
   const [waModal,setWaModal]=useState(false);
   const [waOpts,setWaOpts]=useState({total:true,pagas:true,pendentes:true,listaPendentes:true,adiantamentos:true,listaAdiantamentos:false});
+  const [waMes,setWaMes]=useState("");
   const togOpt=k=>setWaOpts(o=>({...o,[k]:!o[k]}));
 
   const colL=uid=>fb.collection(db,"users",uid,"lancamentos");
@@ -793,24 +923,37 @@ function App(){
     const pP=totD>0?Math.min(100,Math.round(totPago/totD*100)):0;
     function enviarWA(){
       const o=waOpts;
-      const totAlim=diarias.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
-      // detalhe de cada pendente com alimentação
-      const detPend=dPend.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
+      // Filtrar por mês se selecionado
+      const dFilter=waMes?diarias.filter(d=>d.data?.slice(0,7)===waMes):diarias;
+      const mFilter=waMes?movimentos.filter(m=>m.data?.slice(0,7)===waMes):movimentos;
+      const dPendF=dFilter.filter(d=>nst(d.status)==="pendente");
+      const dPagasF=dFilter.filter(d=>nst(d.status)==="pago");
+      const totDF=dFilter.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
+      const totAF=mFilter.reduce((s,m)=>s+num(m.valor),0);
+      const totPendF=dPendF.reduce((s,d)=>s+calcTotal(d),0);
+      const totPagoF=dPagasF.reduce((s,d)=>s+calcTotal(d),0);
+      const saldoF=totPendF-totAF;
+      const totAlimF=dFilter.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
+      const periodo=waMes?(()=>{const[yr,mo]=waMes.split("-");return MFULL[parseInt(mo)-1]+" "+yr;})():"Geral";
+      const detPend=dPendF.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(d=>{
         const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
-        return "• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*"+(alim>0?" (incl. "+fm(alim)+" alim.)":"");
+        return "• "+fd(d.data)+" — "+d.evento+": *"+fm(calcTotal(d))+"*"+(alim>0?" (alim. "+fm(alim)+")":"");
       }).join("\n");
+      const detAdiant=mFilter.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("\n");
       const linhas=[
-        "💼 *FECHAMENTO DE DIÁRIAS*","━━━━━━━━━━━━━━━━━━━━━━","",
+        "💼 *FECHAMENTO DE DIÁRIAS*",
+        "📅 Período: *"+periodo+"*",
+        "━━━━━━━━━━━━━━━━━━━━━━","",
         "📋 *Resumo*",
-        o.total?"• Total em diárias: *"+fm(totD)+"*":"",
-        o.total&&totAlim>0?"  ↳ Alimentação inclusa: *"+fm(totAlim)+"*":"",
-        o.pagas&&dPagas.length>0?"• Diárias pagas ("+dPagas.length+"): *"+fm(totPago)+"*":"",
-        o.pendentes&&dPend.length>0?"• Diárias pendentes ("+dPend.length+"): *"+fm(totPend)+"*":"",
-        o.adiantamentos&&movimentos.length>0?"\n💵 *Adiantamentos*\n"+(o.listaAdiantamentos?movimentos.map(m=>"• "+fd(m.data)+(m.obs?" ("+m.obs+")":"")+": *"+fm(m.valor)+"*").join("\n")+"\n":"")+"• Total adiantado: *"+fm(totA)+"*":"",
+        o.total?"• Total em diárias: *"+fm(totDF)+"*":"",
+        o.total&&totAlimF>0?"  ↳ Alimentação: *"+fm(totAlimF)+"*":"",
+        o.pagas&&dPagasF.length>0?"• Diárias pagas ("+dPagasF.length+"): *"+fm(totPagoF)+"*":"",
+        o.pendentes&&dPendF.length>0?"• Diárias pendentes ("+dPendF.length+"): *"+fm(totPendF)+"*":"",
+        o.adiantamentos&&mFilter.length>0?"\n💵 *Adiantamentos*\n"+(o.listaAdiantamentos?detAdiant+"\n":"")+"• Total adiantado: *"+fm(totAF)+"*":"",
         "",
         "━━━━━━━━━━━━━━━━━━━━━━",
-        saldo>0?"💰 *A RECEBER: "+fm(saldo)+"*":saldo<0?"✅ *QUITADO* (crédito de "+fm(Math.abs(saldo))+")":"✅ *QUITADO*",
-        o.listaPendentes&&dPend.length>0?"\n⏳ *Detalhes pendentes:*\n"+detPend:"",
+        saldoF>0?"💰 *A RECEBER: "+fm(saldoF)+"*":saldoF<0?"✅ *QUITADO* (crédito de "+fm(Math.abs(saldoF))+")":"✅ *QUITADO*",
+        o.listaPendentes&&dPendF.length>0?"\n⏳ *Detalhes pendentes:*\n"+detPend:"",
       ].filter(l=>l!=="").join("\n");
       window.open("https://wa.me/?text="+encodeURIComponent(linhas),"_blank");
       setWaModal(false);
@@ -833,16 +976,32 @@ function App(){
               <div style={{fontSize:22}}>💬</div>
               <div><div style={{fontSize:16,fontWeight:800,color:T}}>Compartilhar no WhatsApp</div><div style={{fontSize:12,color:MT,marginTop:2}}>Escolha o que incluir na mensagem</div></div>
             </div>
+            {/* Filtro de mês */}
+            <div style={{marginBottom:16}}>
+              <div style={{fontSize:11,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:8}}>Período</div>
+              <select style={{...inp,fontSize:13}} value={waMes} onChange={e=>setWaMes(e.target.value)}>
+                <option value="">Todos os meses</option>
+                {meses.map(m=>{const[y,mo]=m.split("-");return <option key={m} value={m}>{MFULL[parseInt(mo)-1]} {y}</option>;})}
+              </select>
+            </div>
+            <div style={{fontSize:11,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:4}}>O que incluir</div>
             <Sw val={waOpts.total} onClick={()=>togOpt("total")} label="Total em diárias" sub={fm(totD)}/>
             <Sw val={waOpts.pagas} onClick={()=>togOpt("pagas")} label="Diárias pagas" sub={dPagas.length+" diárias · "+fm(totPago)}/>
             <Sw val={waOpts.pendentes} onClick={()=>togOpt("pendentes")} label="Diárias pendentes" sub={dPend.length+" diárias · "+fm(totPend)}/>
             <Sw val={waOpts.listaPendentes} onClick={()=>togOpt("listaPendentes")} label="Lista detalhada de pendentes" sub="Data e valor de cada uma"/>
             <Sw val={waOpts.adiantamentos} onClick={()=>togOpt("adiantamentos")} label="Adiantamentos" sub={movimentos.length+" recebimento(s) · "+fm(totA)}/>
             <Sw val={waOpts.listaAdiantamentos} onClick={()=>togOpt("listaAdiantamentos")} label="Lista detalhada de adiantamentos" sub="Data e valor de cada um"/>
-            <div style={{marginTop:18,padding:"12px 16px",background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.15)",borderRadius:12}}>
-              <div style={{fontSize:10,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:6}}>Saldo final</div>
-              <div style={{fontSize:15,fontWeight:800,color:saldo>0?"#4ADE80":saldo<0?"#F87171":"#4ADE80"}}>{saldo>0?"💰 A receber: "+fm(saldo):saldo<0?"✅ Quitado (crédito "+fm(Math.abs(saldo))+")":"✅ Quitado"}</div>
-            </div>
+            {(()=>{
+              const dF2=waMes?diarias.filter(d=>d.data?.slice(0,7)===waMes):diarias;
+              const mF2=waMes?movimentos.filter(m=>m.data?.slice(0,7)===waMes):movimentos;
+              const sF=dF2.filter(d=>nst(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0)-mF2.reduce((s,m)=>s+num(m.valor),0);
+              return(
+                <div style={{marginTop:18,padding:"12px 16px",background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.15)",borderRadius:12}}>
+                  <div style={{fontSize:10,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:6}}>{waMes?"Saldo do mês":"Saldo geral"}</div>
+                  <div style={{fontSize:15,fontWeight:800,color:sF>0?"#4ADE80":sF<0?"#F87171":"#4ADE80"}}>{sF>0?"💰 A receber: "+fm(sF):sF<0?"✅ Quitado (crédito "+fm(Math.abs(sF))+")":"✅ Quitado"}</div>
+                </div>
+              );
+            })()}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}}>
               <button className="press" onClick={()=>setWaModal(false)} style={{padding:"13px",background:"#0A1E35",border:"1px solid rgba(14,165,233,.12)",borderRadius:12,color:MT,fontWeight:600,fontSize:14}}>Cancelar</button>
               <button className="press" onClick={enviarWA} style={{padding:"13px",background:"linear-gradient(135deg,#15803D,#16A34A)",border:"none",borderRadius:12,color:"#4ADE80",fontWeight:700,fontSize:14}}>Enviar 💬</button>
