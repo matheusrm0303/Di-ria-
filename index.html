@@ -489,7 +489,8 @@ function App(){
         const data=normData(d.data);
         const cat=String(d.categoria||"diaria").toLowerCase();
         if(cat==="adiantamento"){
-          lm.push({id:s.id,tipo:"adiantamento",data,valor:d.valor||0,obs:d.desc||d.obs||""});
+          const vAdiant=parseFloat(String(d.valor||d.valorDiaria||0).replace(',','.').replace(/[^0-9.]/g,''))||0;
+          lm.push({id:s.id,tipo:"adiantamento",data,valor:vAdiant,obs:d.desc||d.obs||""});
         }else{
           ld.push({id:s.id,data,evento:d.desc||d.evento||"",tipoDiaria:d.tipo||d.tipoDiaria||"rua",valorDiaria:d.valor||d.valorDiaria||0,dobra:d.calc==="dobra"||d.dobra||false,almoco:Number(d.almoco)||0,janta:Number(d.janta)||0,obs:d.obs||"",status:String(d.status||"pendente").toLowerCase()});
         }
@@ -531,7 +532,7 @@ function App(){
     const v=num(mForm.valor);
     if(!v||v<=0){setMErro("Informe um valor válido.");return;}
     try{
-      await fb.addDoc(colL(usuario.uid),{categoria:"adiantamento",tipo:"adiantamento",valor:v,data:mForm.data,obs:mForm.obs||"",desc:mForm.obs||""});
+      await fb.addDoc(colL(usuario.uid),{categoria:"adiantamento",tipo:"adiantamento",valor:Number(v),data:mForm.data,obs:mForm.obs||"",desc:mForm.obs||""});
       setMForm(f=>({...f,valor:"",obs:""}));setMErro("");showToast("Adiantamento registrado");await carregar(usuario.uid);
     }catch(e){setMErro("Erro: "+e.message);}
   }
@@ -585,7 +586,7 @@ function App(){
 
   const totD=diarias.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
   const totP=diarias.filter(d=>nst(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0);
-  const totA=movimentos.reduce((s,m)=>s+num(m.valor),0);
+  const totA=movimentos.reduce((s,m)=>s+num(m.valor||0),0);
   const saldo=totP-totA;
   const meses=[...new Set(diarias.map(d=>d.data?.slice(0,7)))].filter(Boolean).sort().reverse();
   const dFilt=diarias.filter(d=>{
