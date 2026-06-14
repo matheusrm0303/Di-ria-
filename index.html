@@ -143,6 +143,7 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
 
   // Cards resumo
   const cw=(W-M*2-8)/3;
+  const totAlim2=dF.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
   [[fm(totD2),"Total em Diárias",AZUL2],[fm(totA2),"Adiantamentos",[22,150,70]],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
     doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,20,2,2,"F");
@@ -153,13 +154,22 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
     doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
     doc.text(val,x+6,y+15);
   });y+=26;
+  // linha extra: alimentação se houver
+  if(totAlim2>0){
+    doc.setFillColor(...LIN1);doc.roundedRect(M,y,W-M*2,10,2,2,"F");
+    doc.setDrawColor(...BORDA);doc.roundedRect(M,y,W-M*2,10,2,2,"S");
+    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...CZ);
+    doc.text("🍽  Alimentação inclusa no total:",M+4,y+6.5);
+    doc.setFont("helvetica","bold");doc.setTextColor(100,60,180);doc.text(fm(totAlim2),W-M,y+6.5,{align:"right"});
+    y+=14;
+  }
 
   // Tabela diárias
   sec("DIÁRIAS TRABALHADAS",AZUL);
-  const cols=[M,M+26,M+72,M+120,M+148,M+170];
+  const cols=[M,M+26,M+68,M+106,M+130,M+155,M+176];
   doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,7,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
-  ["Data","Evento","Tipo","Total","Status","Obs"].forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
+  ["Data","Evento","Tipo","Diária","Alim.","Total","Status"].forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
 
   dF.forEach((d,i)=>{
     chk(8);
@@ -167,15 +177,17 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
     doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
     const sc=SC[nst(d.status)]||SC.pendente;
     const tipo=(TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua";
+    const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
     doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
     doc.text(fd(d.data),cols[0],y+4);
-    doc.text(String(d.evento||"-").slice(0,20),cols[1],y+4);
+    doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cols[1],y+4);
     doc.text(tipo.replace("Diária de ",""),cols[2],y+4);
-    doc.text(fm(calcTotal(d))+(d.dobra?" ⚡":""),cols[3],y+4);
+    doc.text(fm(Number(d.valorDiaria)||0),cols[3],y+4);
+    doc.setTextColor(100,60,180);doc.text(alim>0?fm(alim):"-",cols[4],y+4);
+    doc.setTextColor(...TX);doc.text(fm(calcTotal(d)),cols[5],y+4);
     const rgb=sc.cor.slice(1);
     doc.setTextColor(parseInt(rgb.slice(0,2),16),parseInt(rgb.slice(2,4),16),parseInt(rgb.slice(4,6),16));
-    doc.text(sc.label,cols[4],y+4);
-    doc.setTextColor(...CZ);doc.text(String(d.obs||"").slice(0,10),cols[5],y+4);
+    doc.text(sc.label,cols[6],y+4);
     y+=7;
   });
   if(!dF.length){doc.setFontSize(9);doc.setTextColor(...CZ);doc.text("Nenhuma diária.",M+4,y+5);y+=10;}
