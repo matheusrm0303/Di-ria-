@@ -103,8 +103,10 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
   const jsPDF=await loadJsPDF();
   const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210,M=14;let y=14;
-  const INK=[9,11,20],AZUL=[14,165,233],VERDE=[74,222,128],AMAR=[250,204,21],CZ=[100,116,139],BR=[255,255,255],CEU=[56,189,248];
-  const chk=(n=10)=>{if(y+n>282){doc.addPage();doc.setFillColor(...INK);doc.rect(0,0,W,10,"F");y=18;}};
+  // Paleta clara — boa para impressão
+  const INK=[30,58,92],AZUL=[14,122,198],VERDE=[22,163,74],AMAR=[180,130,0],CZ=[100,116,139],BR=[255,255,255],CEU=[14,122,198];
+  const LIN1=[240,247,255],LIN2=[255,255,255],BORDA=[200,220,240],TINTATX=[30,40,60];
+  const chk=(n=10)=>{if(y+n>282){doc.addPage();doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");y=14;}};
   const sec=(t,cor)=>{chk(14);doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);doc.text(t,M+4,y+5.5);y+=12;};
   const dF=diarias.filter(d=>!mes||d.data.slice(0,7)===mes).sort((a,b)=>a.data.localeCompare(b.data));
   const totD2=dF.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
@@ -112,29 +114,31 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
   const totA2=movimentos.reduce((s,m)=>s+num(m.valor),0);
   const saldo2=totP2-totA2;
   doc.setFillColor(...INK);doc.rect(0,0,W,30,"F");
-  doc.setFillColor(...AZUL);doc.rect(0,0,5,30,"F");
+  doc.setFillColor(56,180,255);doc.rect(0,0,5,30,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(17);doc.setTextColor(...BR);doc.text("RELATÓRIO DE DIÁRIAS",M+7,14);
   const periodo=mes?(()=>{const[yr,mo]=mes.split("-");return MFULL[parseInt(mo)-1]+" "+yr;})():"Todos os períodos";
-  doc.setFontSize(9);doc.setTextColor(...CZ);doc.text(periodo,M+7,23);doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,23,{align:"right"});
+  doc.setFontSize(9);doc.setTextColor(180,210,255);doc.text(periodo,M+7,23);doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,23,{align:"right"});
   y=38;
   const cw=(W-M*2-8)/3;
   [[fm(totD2),"Total Diárias",CEU],[fm(totA2),"Adiantamentos",VERDE],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?AMAR:VERDE]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
-    doc.setFillColor(18,20,36);doc.roundedRect(x,y,cw,22,2,2,"F");
+    doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,22,2,2,"F");
+    doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,22,2,2,"S");
     doc.setFillColor(...cor);doc.rect(x,y,3,22,"F");
     doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(...CZ);doc.text(lbl.toUpperCase(),x+6,y+8);
-    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...BR);doc.text(val,x+6,y+17);
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TINTATX);doc.text(val,x+6,y+17);
   });y+=28;
   sec("DIÁRIAS TRABALHADAS",AZUL);
   const cols=[M,M+26,M+72,M+120,M+148,M+170];
-  doc.setFillColor(18,20,36);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...CZ);
+  doc.setFillColor(...INK);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
   ["Data","Evento","Tipo","Total","Status","Obs"].forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
   dF.forEach((d,i)=>{
     chk(8);
-    doc.setFillColor(i%2===0?14:11,i%2===0?16:14,i%2===0?30:24);doc.rect(M,y-1,W-M*2,7,"F");
+    doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+    doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
     const sc=SC[nst(d.status)]||SC.pendente;
     const tipo=(TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua";
-    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...BR);
+    doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TINTATX);
     doc.text(fd(d.data),cols[0],y+4);
     doc.text(String(d.evento||"-").slice(0,20),cols[1],y+4);
     doc.text(tipo.replace("Diária de ",""),cols[2],y+4);
@@ -150,7 +154,7 @@ async function gerarPDFRelatorio(diarias,movimentos,mes){
   doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
   doc.text("TOTAL: "+dF.length+" diárias",M+4,y+5.5);doc.text(fm(totD2),W-M,y+5.5,{align:"right"});
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...INK);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(...CZ);doc.text("Relatório de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
+  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...INK);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);doc.text("Relatório de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
   const nome=mes?(()=>{const[yr,mo]=mes.split("-");return"diarias_"+MABR[parseInt(mo)-1]+yr+".pdf";})():"diarias.pdf";
   abrirBlob(doc,nome);
 }
@@ -159,9 +163,11 @@ async function gerarPDFFechamento(diarias,movimentos){
   const jsPDF=await loadJsPDF();
   const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210,M=14;let y=14;
-  const INK=[9,11,20],AZUL=[14,165,233],VERDE=[74,222,128],AMAR=[250,204,21],CZ=[100,116,139],BR=[255,255,255],CEU=[56,189,248];
+  // Paleta clara — boa para impressão
+  const INK=[20,50,90],AZUL=[14,122,198],VERDE=[22,163,74],AMAR=[180,130,0],CZ=[100,116,139],BR=[255,255,255],CEU=[14,122,198];
+  const LIN1=[240,247,255],LIN2=[255,255,255],BORDA=[200,220,240],TINTATX=[30,40,60];
   const ds=v=>String(v||"");
-  const chk=(n=10)=>{if(y+n>282){doc.addPage();doc.setFillColor(...INK);doc.rect(0,0,W,10,"F");y=18;}};
+  const chk=(n=10)=>{if(y+n>282){doc.addPage();doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");y=14;}};
   const sec=(t,cor)=>{chk(14);doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);doc.text(t,M+4,y+5.5);y+=12;};
   const dPend=diarias.filter(d=>nst(d.status)==="pendente");
   const dPagas=diarias.filter(d=>nst(d.status)==="pago");
@@ -177,31 +183,34 @@ async function gerarPDFFechamento(diarias,movimentos){
   doc.setFontSize(8);doc.setTextColor(...CZ);doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,24,{align:"right"});
   y=40;
   const cw=(W-M*2-8)/3;
-  [[fm(totD2),"Total",CEU],[fm(totA2),"Adiantamentos",AMAR],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?VERDE:AMAR]].forEach(([val,lbl,cor],i)=>{
+  [[fm(totD2),"Total",AZUL],[fm(totA2),"Adiantamentos",AMAR],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?VERDE:AMAR]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
-    doc.setFillColor(18,20,36);doc.roundedRect(x,y,cw,22,2,2,"F");
+    doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,22,2,2,"F");
+    doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,22,2,2,"S");
     doc.setFillColor(...cor);doc.rect(x,y,3,22,"F");
     doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(...CZ);doc.text(lbl.toUpperCase(),x+6,y+8);
-    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...BR);doc.text(val,x+6,y+17);
+    doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TINTATX);doc.text(val,x+6,y+17);
   });y+=30;
   sec("RESUMO GERAL",AZUL);
-  [[fm(totD2),"Total em Diárias",BR],[fm(totPago),"Diárias Pagas ("+dPagas.length+")",VERDE],[fm(totPend),"Diárias Pendentes ("+dPend.length+")",AMAR],[fm(totA2),"Adiantamentos",CEU],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?AMAR:VERDE]].forEach(([v,l,cor],i)=>{
-    chk(9);doc.setFillColor(i%2===0?14:11,i%2===0?16:14,i%2===0?30:24);doc.rect(M,y,W-M*2,8,"F");
+  [[fm(totD2),"Total em Diárias",TINTATX],[fm(totPago),"Diárias Pagas ("+dPagas.length+")",VERDE],[fm(totPend),"Diárias Pendentes ("+dPend.length+")",AMAR],[fm(totA2),"Adiantamentos",AZUL],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?AMAR:VERDE]].forEach(([v,l,cor],i)=>{
+    chk(9);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y,W-M*2,8,"F");
+    doc.setDrawColor(...BORDA);doc.line(M,y+8,W-M,y+8);
     doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...CZ);doc.text(l,M+4,y+5.5);
     doc.setFont("helvetica","bold");doc.setTextColor(...cor);doc.text(v,W-M,y+5.5,{align:"right"});y+=8;
   });y+=6;
   if(dPend.length>0){
     sec("DIÁRIAS PENDENTES",[180,130,0]);
     const cp=[M,M+26,M+82,M+122,M+150,M+172];
-    doc.setFillColor(18,20,36);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...CZ);
+    doc.setFillColor(...INK);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
     ["Data","Evento","Tipo","Diária","Alim.","Total"].forEach((h,i)=>doc.text(h,cp[i],y+5));y+=8;
     dPend.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((d,i)=>{
-      chk(8);doc.setFillColor(i%2===0?14:11,i%2===0?16:14,i%2===0?30:24);doc.rect(M,y-1,W-M*2,7,"F");
+      chk(8);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
       const tipo=((TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
       const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
-      doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...BR);
+      doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TINTATX);
       doc.text(fd(ds(d.data)),cp[0],y+4);doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cp[1],y+4);doc.text(tipo,cp[2],y+4);doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
-      doc.setTextColor(167,139,250);doc.text(alim>0?fm(alim):"-",cp[4],y+4);doc.setTextColor(...AMAR);doc.text(fm(calcTotal(d)),cp[5],y+4);y+=7;
+      doc.setTextColor(120,80,200);doc.text(alim>0?fm(alim):"-",cp[4],y+4);doc.setTextColor(...AMAR);doc.text(fm(calcTotal(d)),cp[5],y+4);y+=7;
     });
     y+=2;doc.setFillColor(180,130,0);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...INK);
     doc.text("SUBTOTAL ("+dPend.length+")",M+4,y+5.5);doc.text(fm(totPend),W-M,y+5.5,{align:"right"});y+=14;
@@ -209,7 +218,7 @@ async function gerarPDFFechamento(diarias,movimentos){
   if(dPagas.length>0){
     sec("DIÁRIAS PAGAS",VERDE);
     const cp=[M,M+26,M+82,M+122,M+150,M+172];
-    doc.setFillColor(18,20,36);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...CZ);
+    doc.setFillColor(...INK);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
     ["Data","Evento","Tipo","Diária","Alim.","Total"].forEach((h,i)=>doc.text(h,cp[i],y+5));y+=8;
     dPagas.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((d,i)=>{
       chk(8);doc.setFillColor(i%2===0?14:11,i%2===0?16:14,i%2===0?30:24);doc.rect(M,y-1,W-M*2,7,"F");
@@ -236,12 +245,13 @@ async function gerarPDFFechamento(diarias,movimentos){
     y+=2;doc.setFillColor(...CEU);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...INK);
     doc.text("TOTAL ADIANTADO",M+4,y+5.5);doc.text(fm(totA2),W-M,y+5.5,{align:"right"});y+=14;
   }
-  chk(28);doc.setFillColor(saldo2>0?6:20,saldo2>0?40:30,saldo2>0?20:6);doc.roundedRect(M,y,W-M*2,22,3,3,"F");
+  chk(28);doc.setFillColor(...(saldo2>0?[235,252,243]:[255,251,235]));doc.roundedRect(M,y,W-M*2,22,3,3,"F");
+  doc.setDrawColor(...(saldo2>0?VERDE:AMAR));doc.roundedRect(M,y,W-M*2,22,3,3,"S");
   doc.setFillColor(...(saldo2>0?VERDE:AMAR));doc.rect(M,y,5,22,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...BR);doc.text(saldo2>=0?"VALOR A RECEBER":"CRÉDITO",M+10,y+9);
+  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TINTATX);doc.text(saldo2>=0?"VALOR A RECEBER":"CRÉDITO",M+10,y+9);
   doc.setFontSize(16);doc.setTextColor(...(saldo2>0?VERDE:AMAR));doc.text(fm(Math.abs(saldo2)),M+10,y+18);
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...INK);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(...CZ);doc.text("Fechamento · Controle de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
+  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...INK);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);doc.text("Fechamento · Controle de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
   abrirBlob(doc,"fechamento_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".pdf");
 }
 
