@@ -40,11 +40,11 @@
   window._auth=getAuth(fa);
   window._db=getFirestore(fa);
   window._fb={createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,orderBy};
+  window._firebaseReady=true;
+  document.dispatchEvent(new Event("firebaseReady"));
 </script>
 
-<script>
-
-</script>
+<script></script>
 
 <script type="text/babel">
 const{useState,useEffect}=React;
@@ -1135,7 +1135,16 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+function mountApp(){
+  if(window._firebaseReady){
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  }else{
+    document.addEventListener("firebaseReady",function(){
+      ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    },{once:true});
+  }
+}
+mountApp();
 </script>
 </body>
 </html>
