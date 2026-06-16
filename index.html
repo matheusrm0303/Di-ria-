@@ -42,6 +42,10 @@
   window._fb={createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,orderBy};
 </script>
 
+<script>
+
+</script>
+
 <script type="text/babel">
 const{useState,useEffect}=React;
 
@@ -99,115 +103,96 @@ function abrirBlob(doc,nome){
   }
 }
 
+
+
 async function gerarPDFRelatorio(diarias,movimentos,mes){
   const jsPDF=await loadJsPDF();
   const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210,M=14;let y=14;
-  // Paleta impressão: fundo branco, azul corporativo
   const AZUL=[24,90,169],AZUL2=[14,122,198],VERDE=[22,150,70],AMAR=[180,130,0],
         CZ=[120,130,145],BR=[255,255,255],TX=[30,40,60],
         LIN1=[242,247,255],LIN2=[255,255,255],BORDA=[210,225,245];
-
-  const novaPag=()=>{
-    doc.addPage();
-    doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
-    y=14;
-  };
+  const novaPag=()=>{doc.addPage();doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");y=14;};
   const chk=(n=10)=>{if(y+n>282)novaPag();};
-  const sec=(t,cor)=>{
-    chk(14);
-    doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");
-    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-    doc.text(t,M+4,y+5.5);y+=12;
-  };
+  const sec=(t,cor)=>{chk(14);doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);doc.text(t,M+4,y+5.5);y+=12;};
+  const MESES_FULL2=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  const MESES_ABR2=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  const TIPOS2=[{tipo:"rua",label:"Diária de Rua"},{tipo:"deposito",label:"Diária de Depósito"},{tipo:"custom",label:"Personalizada"}];
+  const nst2=s=>String(s||"pendente").toLowerCase().trim();
+  const num2=v=>typeof v==="number"?v:Number(String(v||"0").replace(/[R$\s.]/g,"").replace(",","."))||0;
+  const calcTotal2=d=>num2(d.valorDiaria)+num2(d.almoco)+num2(d.janta);
+  const fm2=v=>(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const fd2=iso=>{if(!iso)return"";const[y2,m2,d2]=iso.split("-");return d2+"/"+m2+"/"+y2};
+  const SC2={pendente:{label:"Pendente",cor:"#FACC15"},pago:{label:"Pago",cor:"#4ADE80"},cancelado:{label:"Cancelado",cor:"#F87171"}};
 
   const dF=diarias.filter(d=>!mes||d.data.slice(0,7)===mes).sort((a,b)=>a.data.localeCompare(b.data));
-  const totD2=dF.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
-  const totP2=dF.filter(d=>nst(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0);
-  const totA2=movimentos.reduce((s,m)=>s+num(m.valor),0);
+  const totD2=dF.filter(d=>nst2(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal2(d),0);
+  const totP2=dF.filter(d=>nst2(d.status)==="pendente").reduce((s,d)=>s+calcTotal2(d),0);
+  const totA2=movimentos.reduce((s,m)=>s+num2(m.valor),0);
   const saldo2=totP2-totA2;
+  const totAlim2=dF.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
 
-  // Fundo branco da página
   doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
-
-  // Cabeçalho
   doc.setFillColor(...AZUL);doc.rect(0,0,W,28,"F");
   doc.setFillColor(...AZUL2);doc.rect(0,0,5,28,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(16);doc.setTextColor(...BR);
   doc.text("RELATÓRIO DE DIÁRIAS",M+7,13);
-  const periodo=mes?(()=>{const[yr,mo]=mes.split("-");return MFULL[parseInt(mo)-1]+" "+yr;})():"Todos os períodos";
+  const periodo=mes?(()=>{const[yr,mo]=mes.split("-");return MESES_FULL2[parseInt(mo)-1]+" "+yr;})():"Todos os períodos";
   doc.setFontSize(8);doc.setTextColor(200,220,255);
-  doc.text(periodo,M+7,21);
-  doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,21,{align:"right"});
+  doc.text(periodo,M+7,21);doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,21,{align:"right"});
   y=36;
 
-  // Cards resumo
   const cw=(W-M*2-8)/3;
-  const totAlim2=dF.reduce((s,d)=>s+(Number(d.almoco)||0)+(Number(d.janta)||0),0);
-  [[fm(totD2),"Total em Diárias",AZUL2],[fm(totA2),"Adiantamentos",[22,150,70]],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([val,lbl,cor],i)=>{
+  [[fm2(totD2),"Total em Diárias",AZUL2],[fm2(totA2),"Adiantamentos",[22,150,70]],[fm2(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
     doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,20,2,2,"F");
     doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,20,2,2,"S");
     doc.setFillColor(...cor);doc.rect(x,y,3,20,"F");
-    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(...CZ);
-    doc.text(lbl.toUpperCase(),x+6,y+7);
-    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
-    doc.text(val,x+6,y+15);
+    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(...CZ);doc.text(lbl.toUpperCase(),x+6,y+7);
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);doc.text(val,x+6,y+15);
   });y+=26;
-  // linha extra: alimentação se houver
+
   if(totAlim2>0){
     doc.setFillColor(...LIN1);doc.roundedRect(M,y,W-M*2,10,2,2,"F");
     doc.setDrawColor(...BORDA);doc.roundedRect(M,y,W-M*2,10,2,2,"S");
     doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...CZ);
-    doc.text("🍽  Alimentação inclusa no total:",M+4,y+6.5);
-    doc.setFont("helvetica","bold");doc.setTextColor(100,60,180);doc.text(fm(totAlim2),W-M,y+6.5,{align:"right"});
+    doc.text("Alimentação inclusa no total:",M+4,y+6.5);
+    doc.setFont("helvetica","bold");doc.setTextColor(100,60,180);doc.text(fm2(totAlim2),W-M,y+6.5,{align:"right"});
     y+=14;
   }
 
-  // Tabela diárias
   sec("DIÁRIAS TRABALHADAS",AZUL);
   const cols=[M,M+26,M+68,M+106,M+130,M+155,M+176];
   doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,7,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
   ["Data","Evento","Tipo","Diária","Alim.","Total","Status"].forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
-
   dF.forEach((d,i)=>{
     chk(8);
     doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
     doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
-    const sc=SC[nst(d.status)]||SC.pendente;
-    const tipo=(TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua";
+    const sc=SC2[nst2(d.status)]||SC2.pendente;
+    const tipo=(TIPOS2.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua";
     const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
     doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
-    doc.text(fd(d.data),cols[0],y+4);
+    doc.text(fd2(d.data),cols[0],y+4);
     doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cols[1],y+4);
     doc.text(tipo.replace("Diária de ",""),cols[2],y+4);
-    doc.text(fm(Number(d.valorDiaria)||0),cols[3],y+4);
-    doc.setTextColor(100,60,180);doc.text(alim>0?fm(alim):"-",cols[4],y+4);
-    doc.setTextColor(...TX);doc.text(fm(calcTotal(d)),cols[5],y+4);
+    doc.text(fm2(Number(d.valorDiaria)||0),cols[3],y+4);
+    doc.setTextColor(100,60,180);doc.text(alim>0?fm2(alim):"-",cols[4],y+4);
+    doc.setTextColor(...TX);doc.text(fm2(calcTotal2(d)),cols[5],y+4);
     const rgb=sc.cor.slice(1);
     doc.setTextColor(parseInt(rgb.slice(0,2),16),parseInt(rgb.slice(2,4),16),parseInt(rgb.slice(4,6),16));
     doc.text(sc.label,cols[6],y+4);
     y+=7;
   });
   if(!dF.length){doc.setFontSize(9);doc.setTextColor(...CZ);doc.text("Nenhuma diária.",M+4,y+5);y+=10;}
-
   y+=2;
   doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,8,"F");
   doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-  doc.text("TOTAL: "+dF.length+" diárias",M+4,y+5.5);
-  doc.text(fm(totD2),W-M,y+5.5,{align:"right"});
-
-  // Rodapé
+  doc.text("TOTAL: "+dF.length+" diárias",M+4,y+5.5);doc.text(fm2(totD2),W-M,y+5.5,{align:"right"});
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){
-    doc.setPage(i);
-    doc.setFillColor(...AZUL);doc.rect(0,288,W,9,"F");
-    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);
-    doc.text("Relatório de Diárias",M,294);
-    doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});
-  }
-  const nome=mes?(()=>{const[yr,mo]=mes.split("-");return"diarias_"+MABR[parseInt(mo)-1]+yr+".pdf";})():"diarias.pdf";
+  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...AZUL);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);doc.text("Relatório de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
+  const nome=mes?(()=>{const[yr,mo]=mes.split("-");return"diarias_"+MESES_ABR2[parseInt(mo)-1]+yr+".pdf";})():"diarias.pdf";
   abrirBlob(doc,nome);
 }
 
@@ -219,180 +204,115 @@ async function gerarPDFFechamento(diarias,movimentos){
         CZ=[120,130,145],BR=[255,255,255],TX=[30,40,60],
         LIN1=[242,247,255],LIN2=[255,255,255],BORDA=[210,225,245];
   const ds=v=>String(v||"");
-
-  const novaPag=()=>{
-    doc.addPage();
-    doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
-    y=14;
-  };
+  const TIPOS2=[{tipo:"rua",label:"Diária de Rua"},{tipo:"deposito",label:"Diária de Depósito"},{tipo:"custom",label:"Personalizada"}];
+  const nst2=s=>String(s||"pendente").toLowerCase().trim();
+  const num2=v=>typeof v==="number"?v:Number(String(v||"0").replace(/[R$\s.]/g,"").replace(",","."))||0;
+  const calcTotal2=d=>num2(d.valorDiaria)+num2(d.almoco)+num2(d.janta);
+  const fm2=v=>(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+  const fd2=iso=>{if(!iso)return"";const[y2,m2,d2]=iso.split("-");return d2+"/"+m2+"/"+y2};
+  const novaPag=()=>{doc.addPage();doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");y=14;};
   const chk=(n=10)=>{if(y+n>282)novaPag();};
-  const sec=(t,cor)=>{
-    chk(14);
-    doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");
-    doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-    doc.text(t,M+4,y+5.5);y+=12;
-  };
-  const cabTabela=(cols,headers)=>{
-    doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,7,"F");
-    doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);
-    headers.forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;
-  };
-
-  const dPend=diarias.filter(d=>nst(d.status)==="pendente");
-  const dPagas=diarias.filter(d=>nst(d.status)==="pago");
-  const totD2=diarias.filter(d=>nst(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal(d),0);
-  const totA2=movimentos.reduce((s,m)=>s+num(m.valor),0);
-  const totPend=dPend.reduce((s,d)=>s+calcTotal(d),0);
-  const totPago=dPagas.reduce((s,d)=>s+calcTotal(d),0);
+  const sec=(t,cor)=>{chk(14);doc.setFillColor(...cor);doc.rect(M,y,W-M*2,8,"F");doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);doc.text(t,M+4,y+5.5);y+=12;};
+  const cabTab=(cols,hdrs)=>{doc.setFillColor(...AZUL);doc.rect(M,y,W-M*2,7,"F");doc.setFont("helvetica","bold");doc.setFontSize(7.5);doc.setTextColor(...BR);hdrs.forEach((h,i)=>doc.text(h,cols[i],y+5));y+=8;};
+  const dPend=diarias.filter(d=>nst2(d.status)==="pendente");
+  const dPagas=diarias.filter(d=>nst2(d.status)==="pago");
+  const totD2=diarias.filter(d=>nst2(d.status)!=="cancelado").reduce((s,d)=>s+calcTotal2(d),0);
+  const totA2=movimentos.reduce((s,m)=>s+num2(m.valor),0);
+  const totPend=dPend.reduce((s,d)=>s+calcTotal2(d),0);
+  const totPago=dPagas.reduce((s,d)=>s+calcTotal2(d),0);
   const saldo2=totPend-totA2;
-
-  // Fundo branco
+  const salBg=saldo2>0?[240,252,244]:[253,251,235];
+  const salCor=saldo2>0?VERDE:AMAR;
   doc.setFillColor(...BR);doc.rect(0,0,W,297,"F");
-
-  // Cabeçalho
   doc.setFillColor(...VERDE);doc.rect(0,0,W,28,"F");
   doc.setFillColor(10,100,50);doc.rect(0,0,5,28,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(16);doc.setTextColor(...BR);
-  doc.text("FECHAMENTO",M+7,13);
+  doc.setFont("helvetica","bold");doc.setFontSize(16);doc.setTextColor(...BR);doc.text("FECHAMENTO",M+7,13);
   doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(200,255,220);
   doc.text("Resumo completo de diárias e adiantamentos",M+7,21);
   doc.text("Gerado: "+new Date().toLocaleDateString("pt-BR"),W-M,21,{align:"right"});
   y=36;
-
-  // Cards
   const cw=(W-M*2-8)/3;
-  [[fm(totD2),"Total em Diárias",AZUL2],[fm(totA2),"Adiantamentos",[180,130,0]],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?VERDE:[180,130,0]]].forEach(([val,lbl,cor],i)=>{
+  [[fm2(totD2),"Total em Diárias",AZUL2],[fm2(totA2),"Adiantamentos",AMAR],[fm2(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?VERDE:AMAR]].forEach(([val,lbl,cor],i)=>{
     const x=M+i*(cw+4);
     doc.setFillColor(...LIN1);doc.roundedRect(x,y,cw,20,2,2,"F");
     doc.setDrawColor(...BORDA);doc.roundedRect(x,y,cw,20,2,2,"S");
     doc.setFillColor(...cor);doc.rect(x,y,3,20,"F");
-    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(...CZ);
-    doc.text(lbl.toUpperCase(),x+6,y+7);
-    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
-    doc.text(val,x+6,y+15);
+    doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(...CZ);doc.text(lbl.toUpperCase(),x+6,y+7);
+    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);doc.text(val,x+6,y+15);
   });y+=26;
-
-  // Resumo geral
   sec("RESUMO GERAL",AZUL);
-  [[fm(totD2),"Total em Diárias",TX],[fm(totPago),"Diárias Pagas ("+dPagas.length+")",VERDE],[fm(totPend),"Diárias Pendentes ("+dPend.length+")",[180,130,0]],[fm(totA2),"Adiantamentos",AZUL2],[fm(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([v,l,cor],i)=>{
-    chk(9);
-    doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y,W-M*2,8,"F");
+  [[fm2(totD2),"Total em Diárias",TX],[fm2(totPago),"Diárias Pagas ("+dPagas.length+")",VERDE],[fm2(totPend),"Diárias Pendentes ("+dPend.length+")",[180,130,0]],[fm2(totA2),"Adiantamentos",AZUL2],[fm2(Math.abs(saldo2)),saldo2>=0?"A Receber":"Crédito",saldo2>0?[180,130,0]:VERDE]].forEach(([v,l,cor],i)=>{
+    chk(9);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y,W-M*2,8,"F");
     doc.setDrawColor(...BORDA);doc.line(M,y+8,W-M,y+8);
     doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(...CZ);doc.text(l,M+4,y+5.5);
-    doc.setFont("helvetica","bold");doc.setTextColor(...cor);doc.text(v,W-M,y+5.5,{align:"right"});
-    y+=8;
+    doc.setFont("helvetica","bold");doc.setTextColor(...cor);doc.text(v,W-M,y+5.5,{align:"right"});y+=8;
   });y+=6;
-
-  // Box saldo
-  chk(20);
-  const salBg=saldo2>0?[240,252,244]:saldo2<0?[240,252,244]:[253,251,235];
-  const salCor=saldo2>0?VERDE:saldo2<0?AZUL2:[180,130,0];
-  doc.setFillColor(...salBg);doc.roundedRect(M,y,W-M*2,16,3,3,"F");
+  chk(20);doc.setFillColor(...salBg);doc.roundedRect(M,y,W-M*2,16,3,3,"F");
   doc.setDrawColor(...salCor);doc.roundedRect(M,y,W-M*2,16,3,3,"S");
   doc.setFillColor(...salCor);doc.rect(M,y,4,16,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);
-  doc.text(saldo2>=0?"VALOR A RECEBER":"CRÉDITO",M+8,y+7);
-  doc.setFontSize(13);doc.setTextColor(...salCor);
-  doc.text(fm(Math.abs(saldo2)),W-M,y+11,{align:"right"});
-  y+=22;
-
-  // Diárias pendentes
+  doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(...TX);doc.text(saldo2>=0?"VALOR A RECEBER":"CRÉDITO",M+8,y+7);
+  doc.setFontSize(13);doc.setTextColor(...salCor);doc.text(fm2(Math.abs(saldo2)),W-M,y+11,{align:"right"});y+=22;
   if(dPend.length>0){
-    sec("DIÁRIAS PENDENTES",[180,130,0]);
+    sec("DIÁRIAS PENDENTES",AMAR);
     const cp=[M,M+26,M+82,M+122,M+150,M+172];
-    cabTabela(cp,["Data","Evento","Tipo","Diária","Alim.","Total"]);
+    cabTab(cp,["Data","Evento","Tipo","Diária","Alim.","Total"]);
     dPend.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((d,i)=>{
-      chk(8);
-      doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      chk(8);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
       doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
-      const tipo=((TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
+      const tipo=((TIPOS2.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
       const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
       doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
-      doc.text(fd(ds(d.data)),cp[0],y+4);
-      doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cp[1],y+4);
-      doc.text(tipo,cp[2],y+4);
-      doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
-      doc.setTextColor(100,60,180);doc.text(alim>0?fm(alim):"-",cp[4],y+4);
-      doc.setTextColor(180,130,0);doc.text(fm(calcTotal(d)),cp[5],y+4);
-      y+=7;
+      doc.text(fd2(ds(d.data)),cp[0],y+4);doc.text(String(d.evento||"-").slice(0,18)+(d.dobra?" ⚡":""),cp[1],y+4);
+      doc.text(tipo,cp[2],y+4);doc.text(fm2(Number(d.valorDiaria)||0),cp[3],y+4);
+      doc.setTextColor(100,60,180);doc.text(alim>0?fm2(alim):"-",cp[4],y+4);
+      doc.setTextColor(...AMAR);doc.text(fm2(calcTotal2(d)),cp[5],y+4);y+=7;
     });
-    y+=2;
-    doc.setFillColor(180,130,0);doc.rect(M,y,W-M*2,8,"F");
+    y+=2;doc.setFillColor(...AMAR);doc.rect(M,y,W-M*2,8,"F");
     doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-    doc.text("SUBTOTAL ("+dPend.length+" diárias)",M+4,y+5.5);
-    doc.text(fm(totPend),W-M,y+5.5,{align:"right"});y+=14;
+    doc.text("SUBTOTAL ("+dPend.length+")",M+4,y+5.5);doc.text(fm2(totPend),W-M,y+5.5,{align:"right"});y+=14;
   }
-
-  // Diárias pagas
   if(dPagas.length>0){
     sec("DIÁRIAS PAGAS",VERDE);
     const cp=[M,M+26,M+82,M+122,M+150,M+172];
-    cabTabela(cp,["Data","Evento","Tipo","Diária","Alim.","Total"]);
+    cabTab(cp,["Data","Evento","Tipo","Diária","Alim.","Total"]);
     dPagas.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((d,i)=>{
-      chk(8);
-      doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      chk(8);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
       doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
-      const tipo=((TIPOS.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
+      const tipo=((TIPOS2.find(t=>t.tipo===d.tipoDiaria)||{}).label||"Rua").replace("Diária de ","");
       const alim=(Number(d.almoco)||0)+(Number(d.janta)||0);
       doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...CZ);
-      doc.text(fd(ds(d.data)),cp[0],y+4);
-      doc.text(String(d.evento||"-").slice(0,18),cp[1],y+4);
-      doc.text(tipo,cp[2],y+4);
-      doc.text(fm(Number(d.valorDiaria)||0),cp[3],y+4);
-      doc.setTextColor(100,60,180);doc.text(alim>0?fm(alim):"-",cp[4],y+4);
-      doc.setTextColor(...VERDE);doc.text(fm(calcTotal(d)),cp[5],y+4);
-      y+=7;
+      doc.text(fd2(ds(d.data)),cp[0],y+4);doc.text(String(d.evento||"-").slice(0,18),cp[1],y+4);
+      doc.text(tipo,cp[2],y+4);doc.text(fm2(Number(d.valorDiaria)||0),cp[3],y+4);
+      doc.setTextColor(100,60,180);doc.text(alim>0?fm2(alim):"-",cp[4],y+4);
+      doc.setTextColor(...VERDE);doc.text(fm2(calcTotal2(d)),cp[5],y+4);y+=7;
     });
-    y+=2;
-    doc.setFillColor(...VERDE);doc.rect(M,y,W-M*2,8,"F");
+    y+=2;doc.setFillColor(...VERDE);doc.rect(M,y,W-M*2,8,"F");
     doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-    doc.text("SUBTOTAL ("+dPagas.length+" diárias)",M+4,y+5.5);
-    doc.text(fm(totPago),W-M,y+5.5,{align:"right"});y+=14;
+    doc.text("SUBTOTAL ("+dPagas.length+")",M+4,y+5.5);doc.text(fm2(totPago),W-M,y+5.5,{align:"right"});y+=14;
   }
-
-  // Adiantamentos
   if(movimentos.length>0){
-    chk(20);sec("ADIANTAMENTOS RECEBIDOS",AZUL2);
+    chk(20);sec("ADIANTAMENTOS",AZUL2);
     const ma=[M,M+50,M+130];
-    cabTabela(ma,["Data","Observação","Valor"]);
+    cabTab(ma,["Data","Observação","Valor"]);
     movimentos.slice().sort((a,b)=>ds(a.data).localeCompare(ds(b.data))).forEach((m,i)=>{
-      chk(8);
-      doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
+      chk(8);doc.setFillColor(...(i%2===0?LIN1:LIN2));doc.rect(M,y-1,W-M*2,7,"F");
       doc.setDrawColor(...BORDA);doc.line(M,y+6,W-M,y+6);
       doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(...TX);
-      doc.text(fd(ds(m.data)),ma[0],y+4);
-      doc.text(String(m.obs||"—").slice(0,38),ma[1],y+4);
-      doc.setTextColor(...AZUL2);doc.text(fm(num(m.valor)),ma[2],y+4);
-      y+=7;
+      doc.text(fd2(ds(m.data)),ma[0],y+4);doc.text(String(m.obs||"—").slice(0,38),ma[1],y+4);
+      doc.setTextColor(...AZUL2);doc.text(fm2(num2(m.valor)),ma[2],y+4);y+=7;
     });
-    y+=2;
-    doc.setFillColor(...AZUL2);doc.rect(M,y,W-M*2,8,"F");
+    y+=2;doc.setFillColor(...AZUL2);doc.rect(M,y,W-M*2,8,"F");
     doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(...BR);
-    doc.text("TOTAL ADIANTADO",M+4,y+5.5);
-    doc.text(fm(totA2),W-M,y+5.5,{align:"right"});y+=14;
+    doc.text("TOTAL ADIANTADO",M+4,y+5.5);doc.text(fm2(totA2),W-M,y+5.5,{align:"right"});y+=14;
   }
-
-  // Saldo final grande
-  chk(26);
-  doc.setFillColor(...salBg);doc.roundedRect(M,y,W-M*2,22,3,3,"F");
+  chk(26);doc.setFillColor(...salBg);doc.roundedRect(M,y,W-M*2,22,3,3,"F");
   doc.setDrawColor(...salCor);doc.roundedRect(M,y,W-M*2,22,3,3,"S");
   doc.setFillColor(...salCor);doc.rect(M,y,5,22,"F");
-  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TX);
-  doc.text(saldo2>=0?"VALOR FINAL A RECEBER":"CRÉDITO",M+10,y+9);
-  doc.setFontSize(16);doc.setTextColor(...salCor);
-  doc.text(fm(Math.abs(saldo2)),M+10,y+18);
-  doc.setFontSize(8);doc.setTextColor(...CZ);
-  doc.text(diarias.length+" diárias  ·  "+fm(totA2)+" adiantado  ·  total "+fm(totD2),W-M,y+18,{align:"right"});
-
-  // Rodapé
+  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(...TX);doc.text(saldo2>=0?"VALOR FINAL A RECEBER":"CRÉDITO",M+10,y+9);
+  doc.setFontSize(16);doc.setTextColor(...salCor);doc.text(fm2(Math.abs(saldo2)),M+10,y+18);
+  doc.setFontSize(8);doc.setTextColor(...CZ);doc.text(diarias.length+" diárias · "+fm2(totA2)+" adiantado · total "+fm2(totD2),W-M,y+18,{align:"right"});
   const pages=doc.getNumberOfPages();
-  for(let i=1;i<=pages;i++){
-    doc.setPage(i);
-    doc.setFillColor(...AZUL);doc.rect(0,288,W,9,"F");
-    doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);
-    doc.text("Fechamento · Controle de Diárias",M,294);
-    doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});
-  }
+  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setFillColor(...AZUL);doc.rect(0,288,W,9,"F");doc.setFont("helvetica","normal");doc.setFontSize(7);doc.setTextColor(180,210,255);doc.text("Fechamento · Controle de Diárias",M,294);doc.text("Pág "+i+"/"+pages,W-M,294,{align:"right"});}
   abrirBlob(doc,"fechamento_"+new Date().toLocaleDateString("pt-BR").split("/").join("-")+".pdf");
 }
 
