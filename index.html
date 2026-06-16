@@ -31,20 +31,58 @@
 <body>
 <div id="root"></div>
 
-<script type="module">
-  import{initializeApp}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
-  import{getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
-  import{getFirestore,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,orderBy}from"https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
   const cfg={apiKey:"AIzaSyAYcIFdxFPJyVl2im8Zyps5MGF7pupe_NI",authDomain:"controle-diarias-4627b.firebaseapp.com",projectId:"controle-diarias-4627b",storageBucket:"controle-diarias-4627b.firebasestorage.app",messagingSenderId:"432274053982",appId:"1:432274053982:web:31a14aeb0e4f4517e40dcf"};
-  const fa=initializeApp(cfg);
-  window._auth=getAuth(fa);
-  window._db=getFirestore(fa);
-  window._fb={createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,collection,addDoc,getDocs,doc,updateDoc,deleteDoc,query,orderBy};
-  window._firebaseReady=true;
-  document.dispatchEvent(new Event("firebaseReady"));
-</script>
+  firebase.initializeApp(cfg);
+  const _auth=firebase.auth();
+  const _db=firebase.firestore();
+  window._auth=_auth;
+  window._db=_db;
 
-<script></script>
+  // Wrapper que imita a API modular do Firebase v9+ mas usa a compat por baixo
+  window._fb={
+    createUserWithEmailAndPassword:(auth,e,p)=>auth.createUserWithEmailAndPassword(e,p),
+    signInWithEmailAndPassword:(auth,e,p)=>auth.signInWithEmailAndPassword(e,p),
+    onAuthStateChanged:(auth,cb)=>auth.onAuthStateChanged(cb),
+    signOut:(auth)=>auth.signOut(),
+
+    // collection(db, "col") ou collection(db, "col1", "id1", "col2")
+    collection:(db,...segments)=>{
+      const path=segments.join("/");
+      return db.collection(path);
+    },
+
+    // doc(db, "col", "id") ou doc(db, "col1", "id1", "col2", "id2")
+    doc:(db,...segments)=>{
+      const path=segments.join("/");
+      return db.doc(path);
+    },
+
+    addDoc:(ref,data)=>ref.add(data),
+
+    getDocs:(ref)=>ref.get().then(snap=>({
+      docs:snap.docs.map(d=>({id:d.id,data:()=>d.data()}))
+    })),
+
+    updateDoc:(ref,data)=>ref.update(data),
+    deleteDoc:(ref)=>ref.delete(),
+
+    // query com orderBy: retorna a ref já com orderBy aplicado
+    query:(ref,...constraints)=>{
+      let q=ref;
+      constraints.forEach(c=>{
+        if(c&&c._field)q=q.orderBy(c._field,c._dir||"asc");
+      });
+      return q;
+    },
+    orderBy:(field,dir)=>({_field:field,_dir:dir||"asc"}),
+  };
+
+  window._firebaseReady=true;
+</script>
 
 <script type="text/babel">
 const{useState,useEffect}=React;
