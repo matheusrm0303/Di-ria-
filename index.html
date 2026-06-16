@@ -934,6 +934,9 @@ function App(){
     const pct=totD>0?Math.min(100,Math.round(totRec/totD*100)):0;
     const pA=totD>0?Math.min(100,Math.round(totA/totD*100)):0;
     const pP=totD>0?Math.min(100,Math.round(totPago/totD*100)):0;
+    const dWA=waMes?diarias.filter(d=>d.data?.slice(0,7)===waMes):diarias;
+    const mWA=waMes?movimentos.filter(m=>m.data?.slice(0,7)===waMes):movimentos;
+    const saldoWA=dWA.filter(d=>nst(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0)-mWA.reduce((s,m)=>s+num(m.valor),0);
     function enviarWA(){
       const o=waOpts;
       // Filtrar por mês se selecionado
@@ -1017,17 +1020,10 @@ function App(){
             <Sw val={waOpts.listaPendentes} onClick={()=>togOpt("listaPendentes")} label="Lista detalhada de diárias" sub="Data, evento e valor de cada uma (pagas e pendentes)"/>
             <Sw val={waOpts.adiantamentos} onClick={()=>togOpt("adiantamentos")} label="Adiantamentos" sub={movimentos.length+" recebimento(s) · "+fm(totA)}/>
             <Sw val={waOpts.listaAdiantamentos} onClick={()=>togOpt("listaAdiantamentos")} label="Lista detalhada de adiantamentos" sub="Data e valor de cada um"/>
-            {(()=>{
-              const dF2=waMes?diarias.filter(d=>d.data?.slice(0,7)===waMes):diarias;
-              const mF2=waMes?movimentos.filter(m=>m.data?.slice(0,7)===waMes):movimentos;
-              const sF=dF2.filter(d=>nst(d.status)==="pendente").reduce((s,d)=>s+calcTotal(d),0)-mF2.reduce((s,m)=>s+num(m.valor),0);
-              return(
-                <div style={{marginTop:18,padding:"12px 16px",background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.15)",borderRadius:12}}>
-                  <div style={{fontSize:10,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:6}}>{waMes?"Saldo do mês":"Saldo geral"}</div>
-                  <div style={{fontSize:15,fontWeight:800,color:sF>0?"#4ADE80":sF<0?"#F87171":"#4ADE80"}}>{sF>0?"💰 A receber: "+fm(sF):sF<0?"✅ Quitado (crédito "+fm(Math.abs(sF))+")":"✅ Quitado"}</div>
-                </div>
-              );
-            })()}
+            <div style={{marginTop:18,padding:"12px 16px",background:"rgba(14,165,233,.06)",border:"1px solid rgba(14,165,233,.15)",borderRadius:12}}>
+              <div style={{fontSize:10,fontWeight:700,color:MT,textTransform:"uppercase",letterSpacing:"1px",marginBottom:6}}>{waMes?"Saldo do mês":"Saldo geral"}</div>
+              <div style={{fontSize:15,fontWeight:800,color:saldoWA>0?"#4ADE80":saldoWA<0?"#F87171":"#4ADE80"}}>{saldoWA>0?"💰 A receber: "+fm(saldoWA):saldoWA<0?"- "+fm(Math.abs(saldoWA)):"✅ Quitado"}</div>
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:16}}>
               <button className="press" onClick={()=>setWaModal(false)} style={{padding:"13px",background:"#0A1E35",border:"1px solid rgba(14,165,233,.12)",borderRadius:12,color:MT,fontWeight:600,fontSize:14}}>Cancelar</button>
               <button className="press" onClick={enviarWA} style={{padding:"13px",background:"linear-gradient(135deg,#15803D,#16A34A)",border:"none",borderRadius:12,color:"#4ADE80",fontWeight:700,fontSize:14}}>Enviar 💬</button>
