@@ -43,6 +43,32 @@
 </script>
 
 <script>
+function loadJsPDF(){
+  return new Promise(res=>{
+    if(window.jspdf){res(window.jspdf.jsPDF);return;}
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+    s.onload=()=>res(window.jspdf.jsPDF);
+    document.head.appendChild(s);
+  });
+}
+function abrirBlob(doc,nome){
+  try{
+    const blob=doc.output("blob");
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;a.download=nome;a.target="_blank";
+    document.body.appendChild(a);a.click();
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},2000);
+  }catch(e){
+    try{
+      const uri=doc.output("datauristring");
+      const w=window.open("","_blank");
+      if(w){w.document.write('<html><body style="margin:0"><iframe src="'+uri+'" style="width:100%;height:100vh;border:none"></iframe></body></html>');w.document.close();}
+    }catch(e2){alert("Não foi possível abrir o PDF.");}
+  }
+}
+
 async function gerarPDFRelatorio(diarias,movimentos,mes){
   const jsPDF=await loadJsPDF();
   const doc=new jsPDF({unit:"mm",format:"a4"});
@@ -286,34 +312,6 @@ const normData=v=>{
   if(typeof v==="number")return new Date(v).toISOString().slice(0,10);
   return"";
 };
-
-function loadJsPDF(){
-  return new Promise(res=>{
-    if(window.jspdf){res(window.jspdf.jsPDF);return;}
-    const s=document.createElement("script");
-    s.src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-    s.onload=()=>res(window.jspdf.jsPDF);
-    document.head.appendChild(s);
-  });
-}
-function abrirBlob(doc,nome){
-  try{
-    const blob=doc.output("blob");
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;a.download=nome;a.target="_blank";
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},2000);
-  }catch(e){
-    try{
-      const uri=doc.output("datauristring");
-      const w=window.open("","_blank");
-      if(w){w.document.write('<html><body style="margin:0"><iframe src="'+uri+'" style="width:100%;height:100vh;border:none"></iframe></body></html>');w.document.close();}
-    }catch(e2){alert("Não foi possível abrir o PDF.");}
-  }
-}
-
-
 
 function Calendario({calMes,setCalMes,diasSel,setDiasSel,setForm,txt,ac2,mt}){
   const pts=calMes.split("-");
